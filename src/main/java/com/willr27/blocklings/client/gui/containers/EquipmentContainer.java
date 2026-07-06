@@ -3,11 +3,14 @@ package com.willr27.blocklings.client.gui.containers;
 import com.willr27.blocklings.client.gui.containers.slots.ToolSlot;
 import com.willr27.blocklings.entity.blockling.BlocklingEntity;
 import com.willr27.blocklings.inventory.EquipmentInventory;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.inventory.container.IContainerListener;
-import net.minecraft.inventory.container.Slot;
-import net.minecraft.item.ItemStack;
+/*import net.minecraft.entity.player.PlayerEntity;*/
+/*import net.minecraft.inventory.container.Container;*/
+/*import net.minecraft.inventory.container.IContainerListener;*/
+/*import net.minecraft.inventory.container.Slot;*/
+/*import net.minecraft.item.ItemStack;*/
+import net.minecraft.world.Container;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nonnull;
 
