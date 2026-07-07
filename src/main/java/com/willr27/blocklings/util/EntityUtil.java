@@ -1,7 +1,18 @@
 package com.willr27.blocklings.util;
 
 import com.willr27.blocklings.Blocklings;
-import net.minecraft.entity.Entity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.animal.WaterAnimal;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.pathfinder.Path;
+import net.neoforged.neoforge.common.util.Lazy;
+import org.joml.Vector3d;
+/*import net.minecraft.entity.Entity;
 import net.minecraft.entity.FlyingEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MobEntity;
@@ -15,7 +26,7 @@ import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
-import net.minecraftforge.common.util.Lazy;
+import net.minecraftforge.common.util.Lazy;*/
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -32,7 +43,7 @@ public class EntityUtil
      * The most recent world to load (used to then lazy load the list of valid attack targets).
      */
     @Nullable
-    public static World latestWorld;
+    public static Level latestWorld;
 
     /**
      * A map of entities that should be deemed attackable by a blockling in game.
@@ -83,9 +94,9 @@ public class EntityUtil
      * @return an instance of the given entity type.
      */
     @Nonnull
-    public static Entity create(@Nonnull ResourceLocation type, @Nonnull World world)
+    public static Entity create(@Nonnull ResourceLocation type, @Nonnull Level level)
     {
-        return Objects.requireNonNull(Registry.ENTITY_TYPE.get(type).create(world));
+        return Objects.requireNonNull(Registry.ENTITY_TYPE.get(type).create(level));
     }
 
     /**
@@ -94,7 +105,7 @@ public class EntityUtil
      */
     public static boolean isValidAttackTarget(@Nonnull Entity entity)
     {
-        if (!(entity instanceof MobEntity))
+        if (!(entity instanceof Mob))
         {
            return false;
         }
@@ -102,7 +113,7 @@ public class EntityUtil
         {
             return false;
         }
-        else if (entity instanceof WaterMobEntity)
+        else if (entity instanceof WaterAnimal)
         {
             return false;
         }
@@ -157,7 +168,7 @@ public class EntityUtil
      * @return the path or null if no path was found.
      */
     @Nullable
-    public static Path createPathTo(@Nonnull MobEntity entity, @Nonnull BlockPos blockPos)
+    public static Path createPathTo(@Nonnull Mob entity, @Nonnull BlockPos blockPos)
     {
         return createPathTo(entity, blockPos, 0);
     }
@@ -171,7 +182,7 @@ public class EntityUtil
      * @return the path or null if no path was found.
      */
     @Nullable
-    public static Path createPathTo(@Nonnull MobEntity entity, @Nonnull BlockPos blockPos, float stopDistanceSq)
+    public static Path createPathTo(@Nonnull Mob entity, @Nonnull BlockPos blockPos, float stopDistanceSq)
     {
         Path closestPath = null;
         double closestDistanceSq = Double.MAX_VALUE;
