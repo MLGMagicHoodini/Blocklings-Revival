@@ -1,6 +1,6 @@
 package com.willr27.blocklings.interop;
 
-import net.minecraft.block.BlockState;
+/*import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.Item;
@@ -12,7 +12,15 @@ import slimeknights.tconstruct.library.tools.helper.ToolDamageUtil;
 import slimeknights.tconstruct.library.tools.helper.ToolHarvestLogic;
 import slimeknights.tconstruct.library.tools.item.IModifiableWeapon;
 import slimeknights.tconstruct.library.tools.nbt.ToolStack;
-import slimeknights.tconstruct.tools.item.small.SwordTool;
+import slimeknights.tconstruct.tools.item.small.SwordTool;*/
+
+import net.minecraft.core.Registry;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
 
 import javax.annotation.Nonnull;
 import java.util.List;
@@ -56,9 +64,9 @@ public class ActiveTinkersConstructProxy extends TinkersConstructProxy
     }
 
     @Override
-    public boolean attackEntity(@Nonnull ItemStack stack, @Nonnull LivingEntity attackerLiving, @Nonnull Hand hand, @Nonnull Entity targetEntity, @Nonnull DoubleSupplier cooldownFunction, boolean isExtraAttack)
+    public boolean attackEntity(@Nonnull ItemStack stack, @Nonnull LivingEntity attackerLiving, @Nonnull InteractionHand hand, @Nonnull Entity targetEntity, @Nonnull DoubleSupplier cooldownFunction, boolean isExtraAttack)
     {
-        return ToolAttackUtil.attackEntity((IModifiableWeapon) stack.getItem(), ToolStack.from(stack), attackerLiving, Hand.MAIN_HAND, targetEntity, () -> 1.0, false);
+        return ToolAttackUtil.attackEntity((IModifiableWeapon) stack.getItem(), ToolStack.from(stack), attackerLiving, InteractionHand.MAIN_HAND, targetEntity, () -> 1.0, false);
     }
 
     @Override

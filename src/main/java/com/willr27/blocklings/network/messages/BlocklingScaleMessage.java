@@ -2,8 +2,10 @@ package com.willr27.blocklings.network.messages;
 
 import com.willr27.blocklings.entity.blockling.BlocklingEntity;
 import com.willr27.blocklings.network.BlocklingMessage;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.PacketBuffer;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.entity.player.Player;
+/*import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.network.PacketBuffer;*/
 
 import javax.annotation.Nonnull;
 
@@ -33,7 +35,7 @@ public class BlocklingScaleMessage extends BlocklingMessage<BlocklingScaleMessag
     }
 
     @Override
-    public void encode(@Nonnull PacketBuffer buf)
+    public void encode(@Nonnull FriendlyByteBuf buf)
     {
         super.encode(buf);
 
@@ -41,7 +43,7 @@ public class BlocklingScaleMessage extends BlocklingMessage<BlocklingScaleMessag
     }
 
     @Override
-    public void decode(@Nonnull PacketBuffer buf)
+    public void decode(@Nonnull FriendlyByteBuf buf)
     {
         super.decode(buf);
 
@@ -49,7 +51,7 @@ public class BlocklingScaleMessage extends BlocklingMessage<BlocklingScaleMessag
     }
 
     @Override
-    protected void handle(@Nonnull PlayerEntity player, @Nonnull BlocklingEntity blockling)
+    protected void handle(@Nonnull Player player, @Nonnull BlocklingEntity blockling)
     {
         blockling.setScale(scale, false);
     }

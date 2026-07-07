@@ -11,6 +11,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.common.Tags;
 import net.neoforged.neoforge.common.util.Lazy;
 /*import net.minecraft.block.Block;
@@ -71,9 +72,9 @@ public class BlockUtil
         for (Block block : Registry.BLOCK)
         {
 //            BlockState currentState = latestWorld.getBlockState(posToReplace);
-            TileEntity tileEntity = block.defaultBlockState().createTileEntity(latestWorld);
+            BlockEntity blockEntity = block.defaultBlockState().createBlockEntity(latestWorld);
 
-            if (tileEntity == null)
+            if (blockEntity == null)
             {
                 continue;
             }
@@ -81,7 +82,7 @@ public class BlockUtil
             for (Direction direction : Direction.values())
             {
                 // If the block has an item handler capability, it is considered a container.
-                if (tileEntity.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, direction).isPresent())
+                if (blockEntity.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, direction).isPresent())
                 {
                     containers.add(block);
 

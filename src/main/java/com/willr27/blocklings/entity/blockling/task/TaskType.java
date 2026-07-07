@@ -5,7 +5,7 @@ import com.willr27.blocklings.entity.blockling.BlocklingEntity;
 import com.willr27.blocklings.entity.blockling.goal.BlocklingGoal;
 import com.willr27.blocklings.util.BlocklingsTranslationTextComponent;
 import com.willr27.blocklings.util.TriFunction;
-import net.minecraft.util.text.TranslationTextComponent;
+/*import net.minecraft.util.text.TranslationTextComponent;*/
 
 import java.util.UUID;
 

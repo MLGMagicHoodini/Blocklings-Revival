@@ -3,7 +3,7 @@ package com.willr27.blocklings.entity.blockling.skill;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 import com.willr27.blocklings.entity.blockling.skill.info.SkillInfo;
-import net.minecraftforge.fml.loading.FMLPaths;
+import net.neoforged.fml.loading.FMLPaths;
 
 import java.io.File;
 import java.io.FileNotFoundException;

@@ -5,11 +5,6 @@ import net.minecraft.world.level.block.Block;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
-/*import net.minecraft.block.Block;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.RegistryObject;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;*/
 
 import javax.annotation.Nonnull;
 
@@ -23,7 +18,7 @@ public class BlocklingsBlocks
      */
     public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(NeoForgeRegistries.BLOCKS, Blocklings.MODID);
 
-    public static final RegistryObject<Block> LIGHT = BLOCKS.register("light", LightBlock::new);
+    public static final DeferredRegister<Block> LIGHT = BLOCKS.register("light", LightBlock::new);
 
     /**
      * Registers the blocks.

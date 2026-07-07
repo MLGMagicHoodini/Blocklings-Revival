@@ -7,12 +7,12 @@ import com.willr27.blocklings.entity.blockling.task.BlocklingTasks;
 import com.willr27.blocklings.entity.blockling.goal.config.whitelist.GoalWhitelist;
 import com.willr27.blocklings.entity.blockling.goal.config.whitelist.Whitelist;
 import com.willr27.blocklings.util.*;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.CropsBlock;
-import net.minecraft.item.ItemStack;
-import net.minecraft.pathfinding.Path;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.CropBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.pathfinder.Path;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -64,9 +64,9 @@ public class BlocklingFarmGoal extends BlocklingGatherGoal
         seedWhitelist.setIsUnlocked(blockling.getSkills().getSkill(FarmingSkills.SEED_WHITELIST).isBought(), false);
         BlockUtil.CROPS.get().forEach(crop ->
         {
-            if (crop instanceof CropsBlock)
+            if (crop instanceof CropBlock)
             {
-                seedWhitelist.put(crop.getCloneItemStack(world, null, crop.defaultBlockState()).getItem().getRegistryName(), true);
+                seedWhitelist.put(crop.getCloneItemStack(level, null, crop.defaultBlockState()).getItem().getRegistryName(), true);
             }
         });
         whitelists.add(seedWhitelist);
@@ -112,7 +112,7 @@ public class BlocklingFarmGoal extends BlocklingGatherGoal
                 float offDestroySpeed = offCanHarvest ? ToolUtil.getToolHarvestSpeedWithEnchantments(offStack, targetBlockState) : 0.0f;
 
                 float destroySpeed = blocklingDestroySpeed + mainDestroySpeed + offDestroySpeed;
-                float blockStrength = targetBlockState.getDestroySpeed(world, targetPos);
+                float blockStrength = targetBlockState.getDestroySpeed(level, targetPos);
 
                 blockling.getStats().hand.setValue(BlocklingHand.fromBooleans(mainCanHarvest, offCanHarvest));
 
@@ -144,20 +144,20 @@ public class BlocklingFarmGoal extends BlocklingGatherGoal
 
                     ItemStack seedStack = ItemStack.EMPTY;
 
-                    if (blockling.getSkills().getSkill(FarmingSkills.REPLANTER).isBought() && targetBlock instanceof CropsBlock)
+                    if (blockling.getSkills().getSkill(FarmingSkills.REPLANTER).isBought() && targetBlock instanceof CropBlock)
                     {
-                        CropsBlock cropsBlock = (CropsBlock) targetBlock;
-                        seedStack = cropsBlock.getCloneItemStack(world, targetPos, targetBlockState);
+                        CropBlock cropsBlock = (CropBlock) targetBlock;
+                        seedStack = cropsBlock.getCloneItemStack(level, targetPos, targetBlockState);
                     }
 
-                    world.destroyBlock(targetPos, false);
-                    world.destroyBlockProgress(blockling.getId(), targetPos, -1);
+                    level.destroyBlock(targetPos, false);
+                    level.destroyBlockProgress(blockling.getId(), targetPos, -1);
 
                     if (blockling.getSkills().getSkill(FarmingSkills.SCYTHE).isBought())
                     {
                         for (BlockPos surroundingPos : BlockUtil.getSurroundingBlockPositions(targetPos))
                         {
-                            BlockState surroundingBlockState = world.getBlockState(surroundingPos);
+                            BlockState surroundingBlockState = level.getBlockState(surroundingPos);
                             Block surroundingBlock = surroundingBlockState.getBlock();
 
                             if (isValidTarget(surroundingPos))
@@ -168,19 +168,19 @@ public class BlocklingFarmGoal extends BlocklingGatherGoal
                                     blockling.dropItemStack(stack);
                                 }
 
-                                world.destroyBlock(surroundingPos, false);
+                                level.destroyBlock(surroundingPos, false);
 
                                 ItemStack seedStack2 = ItemStack.EMPTY;
 
-                                if (blockling.getSkills().getSkill(FarmingSkills.REPLANTER).isBought() && surroundingBlock instanceof CropsBlock)
+                                if (blockling.getSkills().getSkill(FarmingSkills.REPLANTER).isBought() && surroundingBlock instanceof CropBlock)
                                 {
-                                    CropsBlock cropsBlock = (CropsBlock) surroundingBlock;
-                                    seedStack2 = cropsBlock.getCloneItemStack(world, surroundingPos, surroundingBlockState);
+                                    CropBlock cropsBlock = (CropBlock) surroundingBlock;
+                                    seedStack2 = cropsBlock.getCloneItemStack(level, surroundingPos, surroundingBlockState);
                                 }
 
                                 if (!seedStack2.isEmpty() && blockling.getEquipment().take(seedStack2) && seedWhitelist.isEntryWhitelisted(seedStack2.getItem()))
                                 {
-                                    world.setBlock(surroundingPos, Block.byItem(seedStack2.getItem()).defaultBlockState(), 3);
+                                    level.setBlock(surroundingPos, Block.byItem(seedStack2.getItem()).defaultBlockState(), 3);
                                 }
                             }
                         }
@@ -188,18 +188,18 @@ public class BlocklingFarmGoal extends BlocklingGatherGoal
 
                     if (!seedStack.isEmpty() && blockling.getEquipment().take(seedStack) && seedWhitelist.isEntryWhitelisted(seedStack.getItem()))
                     {
-                        world.setBlock(targetPos, Block.byItem(seedStack.getItem()).defaultBlockState(), 3);
+                        level.setBlock(targetPos, Block.byItem(seedStack.getItem()).defaultBlockState(), 3);
                     }
                 }
                 else if (targetBlockState.getMaterial().isSolid())
                 {
-                    world.destroyBlockProgress(blockling.getId(), targetPos, BlockUtil.calcBlockBreakProgress(blockling.getActions().gather.getCount()));
+                    level.destroyBlockProgress(blockling.getId(), targetPos, BlockUtil.calcBlockBreakProgress(blockling.getActions().gather.getCount()));
                 }
             }
         }
         else
         {
-            world.destroyBlockProgress(blockling.getId(), targetPos, -1);
+            level.destroyBlockProgress(blockling.getId(), targetPos, -1);
             blockling.getActions().gather.stop();
         }
     }
@@ -302,7 +302,7 @@ public class BlocklingFarmGoal extends BlocklingGatherGoal
     @Nullable
     public Pair<BlockPos, Path> findPathToCrop()
     {
-        if (BlockUtil.areAllAdjacentBlocksSolid(world, getTarget()))
+        if (BlockUtil.areAllAdjacentBlocksSolid(level, getTarget()))
         {
             return null;
         }
@@ -360,12 +360,12 @@ public class BlocklingFarmGoal extends BlocklingGatherGoal
             return false;
         }
 
-        BlockState blockState = world.getBlockState(target);
+        BlockState blockState = level.getBlockState(target);
         Block block = blockState.getBlock();
 
-        if (block instanceof CropsBlock)
+        if (block instanceof CropBlock)
         {
-            CropsBlock cropsBlock = (CropsBlock) block;
+            CropBlock cropsBlock = (CropBlock) block;
 
             if (!cropsBlock.isMaxAge(blockState))
             {

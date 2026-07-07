@@ -59,7 +59,7 @@ public class DropUtil
 
         if (blockling.getNaturalBlocklingType() == BlocklingType.LAPIS || blockling.getBlocklingType() == BlocklingType.LAPIS)
         {
-            mergedStack.enchant(Enchantments.BLOCK_FORTUNE, EnchantmentHelper.getItemEnchantmentLevel(Enchantments.BLOCK_FORTUNE, mergedStack) + 1);
+            mergedStack.enchant(Enchantments.FORTUNE, EnchantmentHelper.getItemEnchantmentLevel(Enchantments.FORTUNE, mergedStack) + 1);
         }
 
         List<ItemStack> drops = Block.getDrops(level.getBlockState(blockPos), (ServerLevel) level, blockPos, null, null, mergedStack);
