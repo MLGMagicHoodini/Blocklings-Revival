@@ -1,3 +1,3 @@
 files:
-  - source: src/main/resources/assets/blocklings/lang/en_us.json
+  - source: src/main/resources/assets/blocklings/lang/
     translation: src/main/resources/assets/blocklings/lang/
