@@ -34,10 +34,14 @@ body:
       label: "Severity"
       description: How badly does this affect gameplay?
       options:
-        - "🔴 Game-breaking / crash"
-        - "🟠 Major — core feature broken"
-        - "🟡 Minor — workaround exists"
-        - "⚪ Cosmetic / visual only"
+        - " ❗ Game-Breaking "
+        - " ⚠️ Crash "
+        - " 🔴 Top Priority "
+        - " 🟠 High Priority "
+        - " 🟡 Medium Priority "
+        - " 🔵 Low Priority "
+        - " 🟣 Nice-to-Fix "
+        - " ⚪ Visual Only "
     validations:
       required: true
 
