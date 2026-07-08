@@ -1,7 +1,7 @@
 name: "✨ Feature Request"
 description: Suggest a new feature, mechanic, block, item, or behavior for Blocklings.
 title: "[Feature]: "
-labels: ["enhancement", "needs-triage"]
+labels: ["💡 Feature"]
 body:
 
   - type: markdown
