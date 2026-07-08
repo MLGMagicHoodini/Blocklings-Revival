@@ -16,15 +16,19 @@ body:
       label: "Category"
       description: What area of the mod does this relate to?
       options:
-        - "🐾 Blockling behavior / AI"
-        - "⚔️ Combat / skills"
-        - "🧱 Blocks / structures"
-        - "🎒 Items / equipment"
-        - "⚙️ Config / settings"
-        - "🖥️ UI / HUD"
-        - "🌍 World generation"
-        - "🔗 Mod compatibility"
-        - "Other"
+        - " 🐾 Blockling Behavior "
+        - " 🆕 New Blockling Type "
+        - " ⚔️ Combat "
+        - " ✨ Skills "
+        - " 🧱 Blocks "
+        - " 🛖 Structures "
+        - " 🎒 Items "
+        - " 🛠️ Equipment "
+        - " ⚙️ Config "
+        - " 🖥️ UI "
+        - " 🌍 World Generation "
+        - " 🔗 Mod Compatibility "
+        - " Other "
     validations:
       required: true
 
