@@ -1,0 +1,135 @@
+name: "🐛 Bug Report"
+description: Report a bug, crash, or unexpected behavior in Blocklings.
+title: "[Bug]: "
+labels: ["🐛 Bug", "needs-triage"]
+body:
+
+  - type: markdown
+    attributes:
+      value: |
+        Before reporting, please check that this hasn't already been reported in [existing issues](../../issues).
+        > **Tip:** Crash logs from `latest.log` or the `crash-reports` folder are extremely helpful — paste them into a [Gist](https://gist.github.com) and link it below.
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: "What part of the mod is affected?"
+      options:
+        - "🐾 Blockling behavior / AI"
+        - "⚔️ Combat / skills"
+        - "🧱 Blocks / structures"
+        - "🎒 Items / equipment"
+        - "⚙️ Config / settings"
+        - "🖥️ UI / HUD"
+        - "🌍 World generation"
+        - "💥 Crash"
+        - "🔗 Mod compatibility"
+        - "Other"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: "Severity"
+      description: How badly does this affect gameplay?
+      options:
+        - "🔴 Game-breaking / crash"
+        - "🟠 Major — core feature broken"
+        - "🟡 Minor — workaround exists"
+        - "⚪ Cosmetic / visual only"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "Describe the bug"
+      description: A clear description of what's going wrong. What did you expect vs. what actually happened?
+      placeholder: "e.g. When I open the Blockling GUI while sneaking, the game crashes with a NullPointerException..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: "Steps to reproduce"
+      description: Walk us through exactly how to trigger the bug.
+      placeholder: |
+        1. Launch the game with the mod installed
+        2. Load or create a world
+        3. ...
+        4. Observe the bug
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: "Crash log / error output"
+      description: Paste your crash report or `latest.log` here, or link a Gist. Leave blank if there's no crash.
+      render: text
+    validations:
+      required: false
+
+  - type: input
+    id: minecraft-version
+    attributes:
+      label: "Minecraft version"
+      placeholder: "e.g. 1.20.1"
+    validations:
+      required: true
+
+  - type: input
+    id: mod-version
+    attributes:
+      label: "Blocklings mod version"
+      placeholder: "e.g. 0.3.4"
+    validations:
+      required: true
+
+  - type: input
+    id: loader-version
+    attributes:
+      label: "Mod loader & version"
+      placeholder: "e.g. Forge 47.1.0 / Fabric Loader 0.15.3 / NeoForge 20.4.x"
+    validations:
+      required: true
+
+  - type: input
+    id: java-version
+    attributes:
+      label: "Java version"
+      placeholder: "e.g. Java 17"
+    validations:
+      required: false
+
+  - type: textarea
+    id: other-mods
+    attributes:
+      label: "Other mods installed"
+      description: List any other mods if you think they might be relevant. You can also attach your full modlist.
+      placeholder: "e.g. Just Enough Items 15.2.0, Farmer's Delight 1.2.3..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: "Additional context"
+      description: Anything else that might help — screenshots, patterns you noticed, server vs. singleplayer, etc.
+      placeholder: "e.g. Only happens on dedicated servers / only after reloading the world / seems random..."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: "Before submitting"
+      options:
+        - label: "I searched existing issues and this hasn't been reported before."
+          required: true
+        - label: "I can reliably reproduce this bug."
+          required: false
+        - label: "I have included a crash log or screenshot where applicable."
+          required: false
