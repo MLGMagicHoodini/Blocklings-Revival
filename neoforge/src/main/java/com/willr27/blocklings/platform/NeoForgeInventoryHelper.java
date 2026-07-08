@@ -1,0 +1,59 @@
+package com.willr27.blocklings.platform;
+
+import com.willr27.blocklings.inventory.BlocklingItemHandler;
+import com.willr27.blocklings.platform.services.IInventoryHelper;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.items.IItemHandler;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+public final class NeoForgeInventoryHelper implements IInventoryHelper
+{
+    @Override
+    @Nullable
+    public BlocklingItemHandler getItemHandler(@Nonnull Level level, @Nonnull BlockPos pos, @Nonnull BlockEntity blockEntity, @Nonnull Direction direction)
+    {
+        IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, blockEntity.getBlockState(), blockEntity, direction);
+        if (handler == null)
+        {
+            return null;
+        }
+        return new NeoForgeItemHandlerAdapter(handler);
+    }
+
+    private record NeoForgeItemHandlerAdapter(IItemHandler handler) implements BlocklingItemHandler
+    {
+        @Override
+        public int getSlots()
+        {
+            return handler.getSlots();
+        }
+
+        @Nonnull
+        @Override
+        public ItemStack getStackInSlot(int slot)
+        {
+            return handler.getStackInSlot(slot);
+        }
+
+        @Nonnull
+        @Override
+        public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate)
+        {
+            return handler.insertItem(slot, stack, simulate);
+        }
+
+        @Nonnull
+        @Override
+        public ItemStack extractItem(int slot, int amount, boolean simulate)
+        {
+            return handler.extractItem(slot, amount, simulate);
+        }
+    }
+}

@@ -1,0 +1,2 @@
+/locate biome #c:is_plains
+/tp @s -116 100 -295

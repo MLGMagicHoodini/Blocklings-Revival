@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${version}",
+  "name": "${mod_name}",
+  "description": "${description}",
+  "authors": ["${mod_author}"],
+  "contact": {},
+  "license": "${license}",
+  "icon": "assets/blocklings/icon.png",
+  "environment": "*",
+  "accessWidener": "blocklings.accesswidener",
+  "entrypoints": {
+    "main": ["com.willr27.blocklings.BlocklingsFabric"],
+    "client": ["com.willr27.blocklings.BlocklingsFabricClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "1.21.1",
+    "fabric-api": "*"
+  }
+}
