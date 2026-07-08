@@ -3,14 +3,19 @@ package com.willr27.blocklings.inventory;
 import com.willr27.blocklings.entity.blockling.BlocklingEntity;
 import com.willr27.blocklings.util.IReadWriteNBT;
 import com.willr27.blocklings.util.Version;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+/*import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.network.PacketBuffer;
-import net.minecraft.world.World;
+import net.minecraft.world.World;*/
 
 import javax.annotation.Nonnull;
 
@@ -19,7 +24,7 @@ public abstract class AbstractInventory implements IInventory, IReadWriteNBT
     public final int invSize;
 
     protected BlocklingEntity blockling;
-    protected World world;
+    protected Level level;
 
     protected ItemStack[] stacks;
     protected ItemStack[] stacksCopy;
@@ -29,7 +34,7 @@ public abstract class AbstractInventory implements IInventory, IReadWriteNBT
     public AbstractInventory(BlocklingEntity blockling, int invSize)
     {
         this.blockling = blockling;
-        this.world = blockling.level;
+        this.level = blockling.level;
         this.invSize = invSize;
 
         stacks = new ItemStack[invSize];
@@ -44,9 +49,9 @@ public abstract class AbstractInventory implements IInventory, IReadWriteNBT
     }
 
     @Override
-    public CompoundNBT writeToNBT(@Nonnull CompoundNBT equipmentInvTag)
+    public CompoundTag writeToNBT(@Nonnull CompoundTag equipmentInvTag)
     {
-        ListNBT list = new ListNBT();
+        ListTag list = new ListTag();
 
         for (int i = 0; i < getContainerSize(); i++)
         {
@@ -57,7 +62,7 @@ public abstract class AbstractInventory implements IInventory, IReadWriteNBT
                 continue;
             }
 
-            CompoundNBT stackTag = new CompoundNBT();
+            CompoundTag stackTag = new CompoundTag();
 
             stackTag.putInt("slot", i);
             stack.save(stackTag);
@@ -71,15 +76,15 @@ public abstract class AbstractInventory implements IInventory, IReadWriteNBT
     }
 
     @Override
-    public void readFromNBT(@Nonnull CompoundNBT invTag, @Nonnull Version tagVersion)
+    public void readFromNBT(@Nonnull CompoundTag invTag, @Nonnull Version tagVersion)
     {
-        ListNBT list = (ListNBT) invTag.get("slots");
+        ListTag list = (ListTag) invTag.get("slots");
 
         if (list != null)
         {
             for (int i = 0; i < list.size(); i++)
             {
-                CompoundNBT stackTag = list.getCompound(i);
+                CompoundTag stackTag = list.getCompound(i);
 
                 int slot = stackTag.getInt("slot");
                 ItemStack stack = ItemStack.of(stackTag);
@@ -92,7 +97,7 @@ public abstract class AbstractInventory implements IInventory, IReadWriteNBT
         }
     }
 
-    public void encode(PacketBuffer buf)
+    public void encode(FriendlyByteBuf buf)
     {
         for (int i = 0; i < getContainerSize(); i++)
         {
@@ -100,7 +105,7 @@ public abstract class AbstractInventory implements IInventory, IReadWriteNBT
         }
     }
 
-    public void decode(PacketBuffer buf)
+    public void decode(FriendlyByteBuf buf)
     {
         for (int i = 0; i < getContainerSize(); i++)
         {
@@ -169,7 +174,7 @@ public abstract class AbstractInventory implements IInventory, IReadWriteNBT
     }
 
     @Override
-    public boolean stillValid(PlayerEntity player)
+    public boolean stillValid(Player player)
     {
         return true;
     }

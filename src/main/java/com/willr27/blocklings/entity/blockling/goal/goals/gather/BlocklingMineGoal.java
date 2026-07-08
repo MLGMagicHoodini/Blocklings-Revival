@@ -8,12 +8,12 @@ import com.willr27.blocklings.entity.blockling.task.BlocklingTasks;
 import com.willr27.blocklings.entity.blockling.goal.config.whitelist.GoalWhitelist;
 import com.willr27.blocklings.entity.blockling.goal.config.whitelist.Whitelist;
 import com.willr27.blocklings.util.*;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.ai.goal.Goal;
-import net.minecraft.item.ItemStack;
-import net.minecraft.pathfinding.Path;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.pathfinder.Path;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -119,7 +119,7 @@ public class BlocklingMineGoal extends BlocklingGatherGoal
                 float offDestroySpeed = offCanHarvest ? ToolUtil.getToolHarvestSpeedWithEnchantments(offStack, targetBlockState) : 0.0f;
 
                 float destroySpeed = blocklingDestroySpeed + mainDestroySpeed + offDestroySpeed;
-                float blockStrength = targetBlockState.getDestroySpeed(world, targetPos);
+                float blockStrength = targetBlockState.getDestroySpeed(level, targetPos);
 
                 blockling.getStats().hand.setValue(BlocklingHand.fromBooleans(mainCanHarvest, offCanHarvest));
 
@@ -149,8 +149,8 @@ public class BlocklingMineGoal extends BlocklingGatherGoal
 
                     blockling.incOresMinedRecently();
 
-                    world.destroyBlock(targetPos, false);
-                    world.destroyBlockProgress(blockling.getId(), targetPos, -1);
+                    level.destroyBlock(targetPos, false);
+                    level.destroyBlockProgress(blockling.getId(), targetPos, -1);
 
                     if (blockling.getSkills().getSkill(MiningSkills.HAMMER).isBought())
                     {
@@ -164,20 +164,20 @@ public class BlocklingMineGoal extends BlocklingGatherGoal
                                     blockling.dropItemStack(stack);
                                 }
 
-                                world.destroyBlock(surroundingPos, false);
+                                level.destroyBlock(surroundingPos, false);
                             }
                         }
                     }
                 }
                 else
                 {
-                    world.destroyBlockProgress(blockling.getId(), targetPos, BlockUtil.calcBlockBreakProgress(blockling.getActions().gather.getCount()));
+                    level.destroyBlockProgress(blockling.getId(), targetPos, BlockUtil.calcBlockBreakProgress(blockling.getActions().gather.getCount()));
                 }
             }
         }
         else
         {
-            world.destroyBlockProgress(blockling.getId(), targetPos, -1);
+            level.destroyBlockProgress(blockling.getId(), targetPos, -1);
             blockling.getActions().gather.stop();
         }
     }
@@ -390,7 +390,7 @@ public class BlocklingMineGoal extends BlocklingGatherGoal
     {
         for (BlockPos veinBlockPos : veinBlockPositions)
         {
-            if (BlockUtil.areAllAdjacentBlocksSolid(world, veinBlockPos))
+            if (BlockUtil.areAllAdjacentBlocksSolid(level, veinBlockPos))
             {
                 continue;
             }
@@ -454,7 +454,7 @@ public class BlocklingMineGoal extends BlocklingGatherGoal
 
             pathTargetPositionsTested.add(veinBlockPos);
 
-            if (BlockUtil.areAllAdjacentBlocksSolid(world, veinBlockPos))
+            if (BlockUtil.areAllAdjacentBlocksSolid(level, veinBlockPos))
             {
                 continue;
             }

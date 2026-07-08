@@ -2,12 +2,17 @@ package com.willr27.blocklings.entity;
 
 import com.willr27.blocklings.Blocklings;
 import com.willr27.blocklings.entity.blockling.BlocklingEntity;
-import net.minecraft.entity.EntityType;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.EntityType;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.NeoForgeRegistries;
+/*import net.minecraft.entity.EntityType;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.RegistryObject;
 import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.ForgeRegistries;*/
 
 import javax.annotation.Nonnull;
 
@@ -19,7 +24,7 @@ public class BlocklingsEntityTypes
     /**
      * The deferred register to register the entity type.
      */
-    public static DeferredRegister<EntityType<?>> ENTITY_TYPES = DeferredRegister.create(ForgeRegistries.ENTITIES, Blocklings.MODID);
+    public static DeferredRegister<EntityType<?>> ENTITY_TYPES = DeferredRegister.create(NeoForgeRegistries.ENTITIES, Blocklings.MODID);
 
     /**
      * The blockling entity type.

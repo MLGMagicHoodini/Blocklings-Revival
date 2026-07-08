@@ -3,7 +3,20 @@ package com.willr27.blocklings.item;
 import com.willr27.blocklings.entity.blockling.BlocklingEntity;
 import com.willr27.blocklings.sound.BlocklingsSounds;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import net.minecraft.client.util.ITooltipFlag;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.fml.util.ObfuscationReflectionHelper;
+/*import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -22,7 +35,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
+import net.minecraftforge.fml.common.ObfuscationReflectionHelper;*/
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -71,7 +84,7 @@ public class BlocklingWhistleItem extends Item
      */
     public static void setBlockling(@Nonnull ItemStack stack, @Nonnull BlocklingEntity blockling)
     {
-        CompoundNBT tag = stack.getOrCreateTag();
+        CompoundTag tag = stack.getOrCreateTag();
         tag.putUUID(BLOCKLING_UUID_KEY, blockling.getUUID());
 
         addStackToMap(blockling, stack);
@@ -103,7 +116,7 @@ public class BlocklingWhistleItem extends Item
         {
             for (ItemStack stack : stacks)
             {
-                CompoundNBT stackTag = stack.getTag();
+                CompoundTag stackTag = stack.getTag();
 
                 if (stackTag != null)
                 {
@@ -118,17 +131,17 @@ public class BlocklingWhistleItem extends Item
 
     @Nonnull
     @Override
-    public ActionResult<ItemStack> use(@Nonnull World world, PlayerEntity player, @Nonnull Hand hand)
+    public ActionResult<ItemStack> use(@Nonnull Level level, Player player, @Nonnull InteractionHand hand)
     {
         ItemStack stack = player.getItemInHand(hand);
 
-        if (world instanceof ServerWorld)
+        if (level instanceof ServerLevel)
         {
-            ServerWorld serverWorld = (ServerWorld) world;
+            ServerLevel serverWorld = (ServerLevel) level;
 
             if (stack.hasTag())
             {
-                CompoundNBT stackTag = stack.getTag();
+                CompoundTag stackTag = stack.getTag();
 
                 if (stackTag.hasUUID(BLOCKLING_UUID_KEY))
                 {
@@ -152,26 +165,26 @@ public class BlocklingWhistleItem extends Item
             }
         }
 
-        return ActionResult.fail(stack);
+        return InteractionResult.fail(stack);
     }
 
     @Override
-    public void inventoryTick(@Nonnull ItemStack stack, @Nonnull World world, @Nonnull Entity entity, int something, boolean somethingElse)
+    public void inventoryTick(@Nonnull ItemStack stack, @Nonnull Level level, @Nonnull Entity entity, int something, boolean somethingElse)
     {
-        super.inventoryTick(stack, world, entity, something, somethingElse);
+        super.inventoryTick(stack, level, entity, something, somethingElse);
 
         if (stack.hasTag() && stack.getTag().contains(BLOCKLING_UUID_KEY))
         {
-            if (world.isClientSide)
+            if (level.isClientSide)
             {
-                BlocklingEntity blockling = findBlockling(stack, (ClientWorld) world);
+                BlocklingEntity blockling = findBlockling(stack, (ClientLevel) level);
 
                 if (blockling != null)
                 {
                     addStackToMap(blockling, stack);
                 }
 
-                String name = findBlocklingName(stack, (ClientWorld) world);
+                String name = findBlocklingName(stack, (ClientLevel) level);
 
                 if (name != null)
                 {
@@ -180,7 +193,7 @@ public class BlocklingWhistleItem extends Item
             }
             else
             {
-                BlocklingEntity blockling = (BlocklingEntity) ((ServerWorld) world).getEntity(stack.getTag().getUUID(BLOCKLING_UUID_KEY));
+                BlocklingEntity blockling = (BlocklingEntity) ((ServerLevel) level).getEntity(stack.getTag().getUUID(BLOCKLING_UUID_KEY));
 
                 if (blockling != null)
                 {
@@ -201,11 +214,11 @@ public class BlocklingWhistleItem extends Item
      */
     @OnlyIn(Dist.CLIENT)
     @Nullable
-    private BlocklingEntity findBlockling(@Nonnull ItemStack stack, @Nonnull ClientWorld world)
+    private BlocklingEntity findBlockling(@Nonnull ItemStack stack, @Nonnull ClientLevel world)
     {
         if (stack.hasTag() && stack.getTag().contains(BLOCKLING_UUID_KEY))
         {
-            Int2ObjectMap<Entity> entitiesById = ObfuscationReflectionHelper.getPrivateValue(ClientWorld.class, world, "field_217429_b");
+            Int2ObjectMap<Entity> entitiesById = ObfuscationReflectionHelper.getPrivateValue(ClientLevel.class, world, "field_217429_b");
 
             Entity blockling = entitiesById.values().stream().filter(e -> e.getUUID().equals(stack.getTag().getUUID(BLOCKLING_UUID_KEY))).findFirst().orElse(null);
 
@@ -224,7 +237,7 @@ public class BlocklingWhistleItem extends Item
      */
     @OnlyIn(Dist.CLIENT)
     @Nullable
-    private String findBlocklingName(@Nonnull ItemStack stack, @Nonnull ClientWorld world)
+    private String findBlocklingName(@Nonnull ItemStack stack, @Nonnull ClientLevel world)
     {
         BlocklingEntity blockling = findBlockling(stack, world);
 
@@ -250,7 +263,7 @@ public class BlocklingWhistleItem extends Item
      */
     @OnlyIn(Dist.CLIENT)
     @Nullable
-    private String findBlocklingLocation(@Nonnull ItemStack stack, @Nonnull ClientWorld world)
+    private String findBlocklingLocation(@Nonnull ItemStack stack, @Nonnull ClientLevel world)
     {
         BlocklingEntity blockling = findBlockling(stack, world);
 
@@ -275,11 +288,11 @@ public class BlocklingWhistleItem extends Item
     }
 
     @Override
-    public void appendHoverText(@Nonnull ItemStack stack, @Nullable World world, @Nonnull List<ITextComponent> tooltip, @Nonnull ITooltipFlag flag)
+    public void appendHoverText(@Nonnull ItemStack stack, @Nullable Level level, @Nonnull List<ITextComponent> tooltip, @Nonnull ITooltipFlag flag)
     {
-        if (world != null)
+        if (level != null)
         {
-            String location = findBlocklingLocation(stack, (ClientWorld) world);
+            String location = findBlocklingLocation(stack, (ClientLevel) level);
 
             if (location != null)
             {
@@ -287,6 +300,6 @@ public class BlocklingWhistleItem extends Item
             }
         }
 
-        super.appendHoverText(stack, world, tooltip, flag);
+        super.appendHoverText(stack, level, tooltip, flag);
     }
 }

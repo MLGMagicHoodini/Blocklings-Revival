@@ -1,6 +1,6 @@
 package com.willr27.blocklings.entity.blockling.goal.goals.container;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.willr27.blocklings.Blocklings;
 import com.willr27.blocklings.capabilities.ContainerConfigureCapability;
 import com.willr27.blocklings.client.gui.control.BaseControl;
@@ -25,27 +25,26 @@ import com.willr27.blocklings.network.messages.GoalMessage;
 import com.willr27.blocklings.util.BlocklingsTranslationTextComponent;
 import com.willr27.blocklings.util.Version;
 import com.willr27.blocklings.util.event.ValueChangedEvent;
-import net.minecraft.block.Blocks;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.Direction;
-import net.minecraft.util.IReorderingProcessor;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraftforge.items.CapabilityItemHandler;
-import net.minecraftforge.items.IItemHandler;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.FormattedText;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.neoforged.neoforge.items.IItemHandler;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.awt.*;
 import java.util.*;
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -119,11 +118,11 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
     }
 
     @Override
-    public void writeToNBT(@Nonnull CompoundNBT taskTag)
+    public void writeToNBT(@Nonnull CompoundTag taskTag)
     {
         super.writeToNBT(taskTag);
 
-        ListNBT containerInfosTag = new ListNBT();
+        ListTag containerInfosTag = new ListTag();
 
         for (int i = 0; i < containerInfos.size(); i++)
         {
@@ -135,11 +134,11 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
     }
 
     @Override
-    public void readFromNBT(@Nonnull CompoundNBT taskTag, @Nonnull Version tagVersion)
+    public void readFromNBT(@Nonnull CompoundTag taskTag, @Nonnull Version tagVersion)
     {
         super.readFromNBT(taskTag, tagVersion);
 
-        ListNBT containerInfosTag = taskTag.getList("container_infos", 10);
+        ListTag containerInfosTag = taskTag.getList("container_infos", 10);
 
         for (int i = 0; i < containerInfosTag.size(); i++)
         {
@@ -152,7 +151,7 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
             }
         }
 
-        CompoundNBT itemSetTag = taskTag.getCompound("item_set");
+        CompoundTag itemSetTag = taskTag.getCompound("item_set");
 
         if (taskTag.contains("item_set"))
         {
@@ -165,7 +164,7 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
     }
 
     @Override
-    public void encode(@Nonnull PacketBuffer buf)
+    public void encode(@Nonnull FriendlyByteBuf buf)
     {
         super.encode(buf);
 
@@ -180,7 +179,7 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
     }
 
     @Override
-    public void decode(@Nonnull PacketBuffer buf)
+    public void decode(@Nonnull FriendlyByteBuf buf)
     {
         super.decode(buf);
 
@@ -408,7 +407,7 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
      * @return returns the target tile entity.
      */
     @Nullable
-    public TileEntity targetAsTileEntity()
+    public BlockEntity targetAsTileEntity()
     {
         if (getTarget() == null)
         {
@@ -423,9 +422,9 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
      * @return returns the container info's tile entity.
      */
     @Nullable
-    public TileEntity containerAsTileEntity(@Nonnull ContainerInfo containerInfo)
+    public BlockEntity containerAsTileEntity(@Nonnull ContainerInfo containerInfo)
     {
-        return world.getBlockEntity(containerInfo.getBlockPos());
+        return level.getBlockEntity(containerInfo.getBlockPos());
     }
 
     /**
@@ -436,7 +435,7 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
      * @return the item handler, or null if it doesn't exist.
      */
     @Nullable
-    public IItemHandler getItemHandler(@Nonnull TileEntity tileEntity, @Nonnull Direction direction)
+    public IItemHandler getItemHandler(@Nonnull BlockEntity tileEntity, @Nonnull Direction direction)
     {
         // We have to use orElse(null) here because the lazy optional doesn't seem to provide a way to use the object
         // outside ifPresent().
@@ -471,7 +470,7 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
     {
         containerInfos.add(containerInfo);
 
-            PlayerEntity player = (PlayerEntity) blockling.getOwner();
+            Player player = (Player) blockling.getOwner();
             player.getCapability(ContainerConfigureCapability.CAPABILITY).ifPresent(cap ->
             {
                 cap.isConfiguring = true;
@@ -664,27 +663,27 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
         TexturedControl addContainerButton = new TexturedControl(Textures.Common.PLUS_ICON)
         {
             @Override
-            protected void onRender(@Nonnull MatrixStack matrixStack, @Nonnull ScissorStack scissorStack, double mouseX, double mouseY, float partialTicks)
+            protected void onRender(@Nonnull PoseStack poseStack, @Nonnull ScissorStack scissorStack, double mouseX, double mouseY, float partialTicks)
             {
                 if (isContainerListFull())
                 {
-                    renderTextureAsBackground(matrixStack, Textures.Common.PLUS_ICON_DISABLED);
+                    renderTextureAsBackground(poseStack, Textures.Common.PLUS_ICON_DISABLED);
                 }
                 else
                 {
-                    super.onRender(matrixStack, scissorStack, mouseX, mouseY, partialTicks);
+                    super.onRender(poseStack, scissorStack, mouseX, mouseY, partialTicks);
                 }
             }
 
             @Override
-            public void onRenderTooltip(@Nonnull MatrixStack matrixStack, double mouseX, double mouseY, float partialTicks)
+            public void onRenderTooltip(@Nonnull PoseStack poseStack, double mouseX, double mouseY, float partialTicks)
             {
-                List<IReorderingProcessor> tooltip = new ArrayList<>();
-                tooltip.add(new BlocklingsTranslationTextComponent("config.container.add").withStyle(isContainerListFull() ? TextFormatting.GRAY : TextFormatting.WHITE).getVisualOrderText());
-                tooltip.add(new BlocklingsTranslationTextComponent("config.container.amount", containerInfos.size(), MAX_CONTAINERS).withStyle(TextFormatting.GRAY).getVisualOrderText());
-                tooltip.add(StringTextComponent.EMPTY.getVisualOrderText());
-                tooltip.addAll(GuiUtil.get().split(new BlocklingsTranslationTextComponent("config.container.add.help", new StringTextComponent(Minecraft.getInstance().options.keyShift.getTranslatedKeyMessage().getString()).withStyle(TextFormatting.ITALIC)).withStyle(TextFormatting.GRAY), 200));
-                renderTooltip(matrixStack, mouseX, mouseY, tooltip);
+                List<FormattedText> tooltip = new ArrayList<>();
+                tooltip.add(new BlocklingsTranslationTextComponent("config.container.add").withStyle(isContainerListFull() ? ChatFormatting.GRAY : ChatFormatting.WHITE).getVisualOrderText());
+                tooltip.add(new BlocklingsTranslationTextComponent("config.container.amount", containerInfos.size(), MAX_CONTAINERS).withStyle(ChatFormatting.GRAY).getVisualOrderText());
+                tooltip.add(TextComponent.EMPTY.getVisualOrderText());
+                tooltip.addAll(GuiUtil.get().split(new BlocklingsTranslationTextComponent("config.container.add.help", new TextComponent(Minecraft.getInstance().options.keyShift.getTranslatedKeyMessage().getString()).withStyle(ChatFormatting.ITALIC)).withStyle(ChatFormatting.GRAY), 200));
+                renderTooltip(poseStack, mouseX, mouseY, tooltip);
             }
 
             @Override
@@ -776,7 +775,7 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
         }
 
         @Override
-        public void encode(@Nonnull PacketBuffer buf)
+        public void encode(@Nonnull FriendlyByteBuf buf)
         {
             super.encode(buf);
 
@@ -785,7 +784,7 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
         }
 
         @Override
-        public void decode(@Nonnull PacketBuffer buf)
+        public void decode(@Nonnull FriendlyByteBuf buf)
         {
             super.decode(buf);
 
@@ -794,7 +793,7 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
         }
 
         @Override
-        protected void handle(@Nonnull PlayerEntity player, @Nonnull BlocklingEntity blockling, @Nonnull BlocklingContainerGoal goal)
+        protected void handle(@Nonnull Player player, @Nonnull BlocklingEntity blockling, @Nonnull BlocklingContainerGoal goal)
         {
             if (add)
             {
@@ -844,7 +843,7 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
         }
 
         @Override
-        public void encode(@Nonnull PacketBuffer buf)
+        public void encode(@Nonnull FriendlyByteBuf buf)
         {
             super.encode(buf);
 
@@ -853,7 +852,7 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
         }
 
         @Override
-        public void decode(@Nonnull PacketBuffer buf)
+        public void decode(@Nonnull FriendlyByteBuf buf)
         {
             super.decode(buf);
 
@@ -863,7 +862,7 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
         }
 
         @Override
-        protected void handle(@Nonnull PlayerEntity player, @Nonnull BlocklingEntity blockling, @Nonnull BlocklingContainerGoal goal)
+        protected void handle(@Nonnull Player player, @Nonnull BlocklingEntity blockling, @Nonnull BlocklingContainerGoal goal)
         {
             goal.setContainerInfo(index, containerInfo, false);
         }
@@ -905,7 +904,7 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
         }
 
         @Override
-        public void encode(@Nonnull PacketBuffer buf)
+        public void encode(@Nonnull FriendlyByteBuf buf)
         {
             super.encode(buf);
 
@@ -914,7 +913,7 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
         }
 
         @Override
-        public void decode(@Nonnull PacketBuffer buf)
+        public void decode(@Nonnull FriendlyByteBuf buf)
         {
             super.decode(buf);
 
@@ -923,7 +922,7 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
         }
 
         @Override
-        protected void handle(@Nonnull PlayerEntity player, @Nonnull BlocklingEntity blockling, @Nonnull BlocklingContainerGoal goal)
+        protected void handle(@Nonnull Player player, @Nonnull BlocklingEntity blockling, @Nonnull BlocklingContainerGoal goal)
         {
             goal.moveContainerInfo(fromIndex, toIndex, false);
         }

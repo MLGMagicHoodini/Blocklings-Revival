@@ -1,0 +1,74 @@
+name: "✨ Feature Request"
+description: Suggest a new feature, mechanic, block, item, or behavior for Blocklings.
+title: "[Feature]: "
+labels: ["💡 Feature"]
+body:
+
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to suggest something! Please fill out the sections below as clearly as you can.
+        > **Tip:** Screenshots, mockups, or links to similar mods are always welcome.
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: "Category"
+      description: What area of the mod does this relate to?
+      options:
+        - "🐾 Blockling behavior / AI"
+        - "⚔️ Combat / skills"
+        - "🧱 Blocks / structures"
+        - "🎒 Items / equipment"
+        - "⚙️ Config / settings"
+        - "🖥️ UI / HUD"
+        - "🌍 World generation"
+        - "🔗 Mod compatibility"
+        - "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: "Is this related to a problem?"
+      description: Is there something frustrating or missing that prompted this idea? Leave blank if not applicable.
+      placeholder: "e.g. I find it annoying that Blocklings can't... / Players often get confused because..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: "Describe the feature you'd like"
+      description: Be as specific as you can — what should it do, how should it work, where does it appear?
+      placeholder: "e.g. Add a config option that allows... / Blocklings should be able to..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "Alternatives you've considered"
+      description: Any workarounds or other approaches you've thought about?
+      placeholder: "e.g. Using another mod, a datapack, config values..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: "Additional context"
+      description: Anything else that helps explain the idea — mockups, screenshots, links to similar mods, etc.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: "Before submitting"
+      options:
+        - label: "I searched existing issues and this hasn't been suggested before."
+          required: true
+        - label: "This feels in the spirit of the original Blocklings mod."
+          required: false

@@ -20,7 +20,7 @@ import com.willr27.blocklings.network.messages.BlocklingNameMessage;
 import com.willr27.blocklings.network.messages.BlocklingScaleMessage;
 import com.willr27.blocklings.network.messages.BlocklingTypeMessage;
 import com.willr27.blocklings.util.*;
-import net.minecraft.block.Block;
+/*import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.enchantment.EnchantmentHelper;
@@ -59,7 +59,32 @@ import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.event.ForgeEventFactory;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.registry.IEntityAdditionalSpawnData;
-import net.minecraftforge.fml.network.NetworkHooks;
+import net.minecraftforge.fml.network.NetworkHooks;*/
+import net.minecraft.client.renderer.EffectInstance;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.DifficultyInstance;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.animal.Animal;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.AxeItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.fml.common.Mod;
 import org.jline.utils.Log;
 
 import javax.annotation.Nonnull;
@@ -180,9 +205,9 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
      * @param type the blockling entity type.
      * @param world the world the blockling is in.
      */
-    public BlocklingEntity(@Nonnull EntityType<? extends BlocklingEntity> type, @Nonnull World world)
+    public BlocklingEntity(@Nonnull EntityType<? extends BlocklingEntity> type, @Nonnull Level level)
     {
-        super(type, world);
+        super(type, level);
 
         stats.initUpdateCallbacks();
 
@@ -219,12 +244,12 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
      */
     public static AttributeModifierMap.MutableAttribute createAttributes()
     {
-        return MobEntity.createMobAttributes().add(Attributes.ATTACK_DAMAGE, 0.0).add(Attributes.ATTACK_SPEED, 0.0);
+        return Mob.createMobAttributes().add(Attributes.ATTACK_DAMAGE, 0.0).add(Attributes.ATTACK_SPEED, 0.0);
     }
 
     @Override
     @Nullable
-    public ILivingEntityData finalizeSpawn(@Nonnull IServerWorld world, @Nonnull DifficultyInstance difficultyInstance, @Nonnull SpawnReason spawnReason, @Nullable ILivingEntityData entityData, @Nullable CompoundNBT entityTag)
+    public ILivingEntityData finalizeSpawn(@Nonnull IServerWorld world, @Nonnull DifficultyInstance difficultyInstance, @Nonnull SpawnReason spawnReason, @Nullable ILivingEntityData entityData, @Nullable CompoundTag entityTag)
     {
         tasks.initDefaultTasks();
 
@@ -237,11 +262,11 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
     }
 
     @Override
-    public void addAdditionalSaveData(@Nonnull CompoundNBT tag)
+    public void addAdditionalSaveData(@Nonnull CompoundTag tag)
     {
         super.addAdditionalSaveData(tag);
 
-        CompoundNBT blocklingTag = new CompoundNBT();
+        CompoundTag blocklingTag = new CompoundTag();
 
         blocklingTag.putString("blocklings_version", Blocklings.VERSION.toString());
 
@@ -251,7 +276,7 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
     }
 
     @Override
-    public CompoundNBT writeToNBT(@Nonnull CompoundNBT blocklingTag)
+    public CompoundTag writeToNBT(@Nonnull CompoundTag blocklingTag)
     {
         blocklingTag.putString("original_type", naturalBlocklingType.key);
         blocklingTag.putString("type", blocklingType.key);
@@ -267,11 +292,11 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
     }
 
     @Override
-    public void readAdditionalSaveData(@Nonnull CompoundNBT tag)
+    public void readAdditionalSaveData(@Nonnull CompoundTag tag)
     {
         super.readAdditionalSaveData(tag);
 
-        CompoundNBT blocklingTag = tag.getCompound("blockling");
+        CompoundTag blocklingTag = tag.getCompound("blockling");
 
         if (blocklingTag != null)
         {
@@ -280,7 +305,7 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
     }
 
     @Override
-    public void readFromNBT(@Nonnull CompoundNBT blocklingTag, @Nonnull Version tagVersion)
+    public void readFromNBT(@Nonnull CompoundTag blocklingTag, @Nonnull Version tagVersion)
     {
         blocklingTypeVariant = blocklingTag.getInt("variant");
         naturalBlocklingType = BlocklingType.find(blocklingTag.getString("original_type"), tagVersion);
@@ -290,28 +315,28 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
         // Health can be overwritten when loading max health modifiers.
         float health = getHealth();
 
-        CompoundNBT equipmentInvTag = blocklingTag.getCompound("equipment_inv");
+        CompoundTag equipmentInvTag = blocklingTag.getCompound("equipment_inv");
 
         if (equipmentInvTag != null)
         {
             equipmentInv.readFromNBT(equipmentInvTag, tagVersion);
         }
 
-        CompoundNBT statsTag = blocklingTag.getCompound("attributes");
+        CompoundTag statsTag = blocklingTag.getCompound("attributes");
 
         if (statsTag != null)
         {
             stats.readFromNBT(statsTag, tagVersion);
         }
 
-        CompoundNBT tasksTag = blocklingTag.getCompound("tasks");
+        CompoundTag tasksTag = blocklingTag.getCompound("tasks");
 
         if (tasksTag != null)
         {
             tasks.readFromNBT(tasksTag, tagVersion);
         }
 
-        CompoundNBT skillsTag = blocklingTag.getCompound("skills");
+        CompoundTag skillsTag = blocklingTag.getCompound("skills");
 
         if (skillsTag != null)
         {
@@ -326,7 +351,7 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
     }
 
     @Override
-    public void writeSpawnData(@Nonnull PacketBuffer buf)
+    public void writeSpawnData(@Nonnull FriendlyByteBuf buf)
     {
         buf.writeInt(BlocklingType.TYPES.indexOf(naturalBlocklingType));
         buf.writeInt(BlocklingType.TYPES.indexOf(blocklingType));
@@ -340,7 +365,7 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
     }
 
     @Override
-    public void readSpawnData(@Nonnull PacketBuffer buf)
+    public void readSpawnData(@Nonnull FriendlyByteBuf buf)
     {
         naturalBlocklingType = BlocklingType.TYPES.get(buf.readInt());
         blocklingType = BlocklingType.TYPES.get(buf.readInt());
@@ -713,7 +738,7 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
             {
                 if (mainHandTinkersTool && ToolUtil.isUseableTool(mainStack))
                 {
-                    if (TinkersConstructProxy.instance.attackEntity(mainStack, this, Hand.MAIN_HAND, target, () -> 1.0, false))
+                    if (TinkersConstructProxy.instance.attackEntity(mainStack, this, InteractionHand.MAIN_HAND, target, () -> 1.0, false))
                     {
                         tinkersDamage += stats.mainHandAttackDamage.getValue(); // This won't take into account Tinkers' modifiers but is good enough.
                         hasHurt = true;
@@ -732,7 +757,7 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
             {
                 if (offHandTinkersTool && ToolUtil.isUseableTool(offStack))
                 {
-                    if (TinkersConstructProxy.instance.attackEntity(offStack, this, Hand.MAIN_HAND, target, () -> 1.0, false))
+                    if (TinkersConstructProxy.instance.attackEntity(offStack, this, InteractionHand.MAIN_HAND, target, () -> 1.0, false))
                     {
                         tinkersDamage += stats.offHandAttackDamage.getValue(); // This won't take into account Tinkers' modifiers but is good enough.
                         hasHurt = true;
@@ -793,9 +818,9 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
                 setDeltaMovement(getDeltaMovement().multiply(0.6, 1.0, 0.6));
             }
 
-            if (target instanceof PlayerEntity)
+            if (target instanceof Player)
             {
-                PlayerEntity player = (PlayerEntity) target;
+                Player player = (Player) target;
                 maybeDisableShield(player, this.getMainHandItem(), player.isUsingItem() ? player.getUseItem() : ItemStack.EMPTY);
             }
 
@@ -859,9 +884,9 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
     /**
      * Copied from MobEntity as we need to run custom hurt target code but still need this functionality.
      */
-    private void maybeDisableShield(PlayerEntity p_233655_1_, ItemStack p_233655_2_, ItemStack p_233655_3_) {
+    private void maybeDisableShield(Player p_233655_1_, ItemStack p_233655_2_, ItemStack p_233655_3_) {
         if (!p_233655_2_.isEmpty() && !p_233655_3_.isEmpty() && p_233655_2_.getItem() instanceof AxeItem && p_233655_3_.getItem() == Items.SHIELD) {
-            float f = 0.25F + (float)EnchantmentHelper.getBlockEfficiency(this) * 0.05F;
+            float f = 0.25F + (float) EnchantmentHelper.getBlockEfficiency(this) * 0.05F;
             if (this.random.nextFloat() < f) {
                 p_233655_1_.getCooldowns().addCooldown(Items.SHIELD, 100);
                 this.level.broadcastEntityEvent(p_233655_1_, (byte)30);
@@ -928,11 +953,11 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
 
     @Override
     @Nonnull
-    public ActionResultType mobInteract(@Nonnull PlayerEntity player, @Nonnull Hand hand)
+    public InteractionResult mobInteract(@Nonnull Player player, @Nonnull InteractionHand hand)
     {
-        ActionResultType result;
+        InteractionResult result;
 
-        if (hand == Hand.MAIN_HAND)
+        if (hand == InteractionHand.MAIN_HAND)
         {
             result = mobInteractMainHand(player);
         }
@@ -941,7 +966,7 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
             result = mobInteractOffHand(player);
         }
 
-        if (result != ActionResultType.PASS)
+        if (result != InteractionResult.PASS)
         {
             return result;
         }
@@ -956,9 +981,9 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
      * @return the result of the interaction.
      */
     @Nonnull
-    private ActionResultType mobInteractMainHand(@Nonnull PlayerEntity player)
+    private InteractionResult mobInteractMainHand(@Nonnull Player player)
     {
-        ItemStack stack = player.getItemInHand(Hand.MAIN_HAND);
+        ItemStack stack = player.getItemInHand(InteractionHand.MAIN_HAND);
         Item item = stack.getItem();
 
         if (item == BLOCKLING_WHISTLE.get())
@@ -967,7 +992,7 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
             {
                 BlocklingWhistleItem.setBlockling(stack, this);
 
-                return ActionResultType.SUCCESS;
+                return InteractionResult.SUCCESS;
             }
         }
         if (blocklingType.isFoodForType(item))
@@ -983,7 +1008,7 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
                         stack.shrink(1);
                     }
 
-                    return ActionResultType.SUCCESS;
+                    return InteractionResult.SUCCESS;
                 }
                 else
                 {
@@ -1009,7 +1034,7 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
                                     stack.shrink(1);
                                 }
 
-                                return ActionResultType.SUCCESS;
+                                return InteractionResult.SUCCESS;
                             }
                         }
                     }
@@ -1027,7 +1052,7 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
                                 stack.shrink(1);
                             }
 
-                            return ActionResultType.SUCCESS;
+                            return InteractionResult.SUCCESS;
                         }
                     }
                 }
@@ -1056,7 +1081,7 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
                     }
                 }
 
-                return ActionResultType.SUCCESS;
+                return InteractionResult.SUCCESS;
             }
         }
 
@@ -1072,11 +1097,11 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
                     }
                 }
 
-                return ActionResultType.CONSUME;
+                return InteractionResult.CONSUME;
 //            }
         }
 
-        return ActionResultType.PASS;
+        return InteractionResult.PASS;
     }
 
     /**
@@ -1086,12 +1111,12 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
      * @return the result of the interaction.
      */
     @Nonnull
-    private ActionResultType mobInteractOffHand(@Nonnull PlayerEntity player)
+    private InteractionResult mobInteractOffHand(@Nonnull Player player)
     {
-        ItemStack stack = player.getItemInHand(Hand.OFF_HAND);
+        ItemStack stack = player.getItemInHand(InteractionHand.OFF_HAND);
         Item item = stack.getItem();
 
-        return ActionResultType.PASS;
+        return InteractionResult.PASS;
     }
 
     /**
@@ -1126,7 +1151,7 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
     }
 
     @Override
-    public void tame(@Nonnull PlayerEntity player)
+    public void tame(@Nonnull Player player)
     {
         super.tame(player);
 
@@ -1165,25 +1190,25 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
     @Nonnull
     public ItemStack getMainHandItem()
     {
-        return getItemInHand(Hand.MAIN_HAND);
+        return getItemInHand(InteractionHand.MAIN_HAND);
     }
 
     @Override
     @Nonnull
     public ItemStack getOffhandItem()
     {
-        return getItemInHand(Hand.OFF_HAND);
+        return getItemInHand(InteractionHand.OFF_HAND);
     }
 
     @Override
     @Nonnull
-    public ItemStack getItemInHand(@Nonnull Hand hand)
+    public ItemStack getItemInHand(@Nonnull InteractionHand hand)
     {
         return equipmentInv.getHandStack(hand);
     }
 
     @Override
-    public void setItemInHand(@Nonnull Hand hand, @Nonnull ItemStack stack)
+    public void setItemInHand(@Nonnull InteractionHand hand, @Nonnull ItemStack stack)
     {
         equipmentInv.setHandStack(hand, stack);
     }
@@ -1256,18 +1281,18 @@ public class BlocklingEntity extends TameableEntity implements IEntityAdditional
     {
         if (slotType == EquipmentSlotType.MAINHAND)
         {
-            setItemInHand(Hand.MAIN_HAND, stack);
+            setItemInHand(InteractionHand.MAIN_HAND, stack);
         }
         else if (slotType == EquipmentSlotType.OFFHAND)
         {
-            setItemInHand(Hand.OFF_HAND, stack);
+            setItemInHand(InteractionHand.OFF_HAND, stack);
         }
     }
 
     /**
      * @return true as the blockling needs to be created before it can decide whether it can spawn.
      */
-    public static boolean checkBlocklingSpawnRules(EntityType<? extends AnimalEntity> p_223316_0_, IWorld p_223316_1_, SpawnReason p_223316_2_, BlockPos p_223316_3_, Random p_223316_4_)
+    public static boolean checkBlocklingSpawnRules(EntityType<? extends Animal> p_223316_0_, IWorld p_223316_1_, SpawnReason p_223316_2_, BlockPos p_223316_3_, Random p_223316_4_)
     {
         return true;
     }
@@ -1307,7 +1332,7 @@ Log.info(blocklingType.name.getString(), " ", getX(), ", ", getY(), ", ", getZ()
 
     @Nullable
     @Override
-    public AgeableEntity getBreedOffspring(@Nonnull ServerWorld world, @Nonnull AgeableEntity entity)
+    public AgeableEntity getBreedOffspring(@Nonnull ServerLevel level, @Nonnull AgeableEntity entity)
     {
         return null;
     }

@@ -12,7 +12,17 @@ import com.willr27.blocklings.util.BlockUtil;
 import com.willr27.blocklings.util.EntityUtil;
 import com.willr27.blocklings.util.ToolUtil;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.EntitySize;
+import net.minecraft.world.entity.animal.Animal;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.LevelEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.EntityEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
+/*import net.minecraft.entity.EntitySize;
 import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.entity.monster.MonsterEntity;
 import net.minecraft.entity.passive.AnimalEntity;
@@ -25,7 +35,7 @@ import net.minecraftforge.event.entity.living.LootingLevelEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.Mod;*/
 
 import javax.annotation.Nonnull;
 
@@ -39,10 +49,10 @@ public class ForgeEventBusEvents
      * Handles any setup that needs to take place when the world loads.
      */
     @SubscribeEvent
-    public static void onWorldLoad(@Nonnull WorldEvent.Load event)
+    public static void onWorldLoad(@Nonnull LevelEvent.Load event)
     {
-        EntityUtil.latestWorld = (World) event.getWorld();
-        BlockUtil.latestWorld = (World) event.getWorld();
+        EntityUtil.latestWorld = (Level) event.getLevel();
+        BlockUtil.latestWorld = (Level) event.getLevel();
 
         BlocklingType.init();
         ToolUtil.init();
@@ -114,11 +124,11 @@ public class ForgeEventBusEvents
                 {
                     ItemStack itemStack = blockling.getEquipment().addItem(itemEntity.getItem());
 
-                    if (blockling.getSkills().getSkill(CombatSkills.ANIMAL_HUNTER).isBought() && event.getEntity() instanceof AnimalEntity)
+                    if (blockling.getSkills().getSkill(CombatSkills.ANIMAL_HUNTER).isBought() && event.getEntity() instanceof Animal)
                     {
                         itemStack.setCount(itemStack.getCount() * 2);
                     }
-                    else if (blockling.getSkills().getSkill(CombatSkills.MONSTER_HUNTER).isBought() && event.getEntity() instanceof MonsterEntity)
+                    else if (blockling.getSkills().getSkill(CombatSkills.MONSTER_HUNTER).isBought() && event.getEntity() instanceof Monster)
                     {
                         itemStack.setCount(itemStack.getCount() * 2);
                     }

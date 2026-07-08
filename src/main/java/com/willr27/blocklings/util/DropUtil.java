@@ -3,7 +3,17 @@ package com.willr27.blocklings.util;
 import com.willr27.blocklings.entity.blockling.BlocklingEntity;
 import com.willr27.blocklings.entity.blockling.BlocklingType;
 import com.willr27.blocklings.entity.blockling.skill.skills.MiningSkills;
-import net.minecraft.block.Block;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+/*import net.minecraft.block.Block;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
@@ -13,7 +23,7 @@ import net.minecraft.item.crafting.FurnaceRecipe;
 import net.minecraft.item.crafting.IRecipeType;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.server.ServerWorld;*/
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -36,7 +46,7 @@ public class DropUtil
     @Nonnull
     public static List<ItemStack> getDrops(@Nonnull Context context, @Nonnull BlocklingEntity blockling, @Nonnull BlockPos blockPos, @Nonnull ItemStack mainStack, @Nonnull ItemStack offStack)
     {
-        World world = blockling.level;
+        Level level = blockling.level;
 
         ItemStack mergedStack = mainStack.copy();
 
@@ -49,10 +59,10 @@ public class DropUtil
 
         if (blockling.getNaturalBlocklingType() == BlocklingType.LAPIS || blockling.getBlocklingType() == BlocklingType.LAPIS)
         {
-            mergedStack.enchant(Enchantments.BLOCK_FORTUNE, EnchantmentHelper.getItemEnchantmentLevel(Enchantments.BLOCK_FORTUNE, mergedStack) + 1);
+            mergedStack.enchant(Enchantments.FORTUNE, EnchantmentHelper.getItemEnchantmentLevel(Enchantments.FORTUNE, mergedStack) + 1);
         }
 
-        List<ItemStack> drops = Block.getDrops(world.getBlockState(blockPos), (ServerWorld) world, blockPos, null, null, mergedStack);
+        List<ItemStack> drops = Block.getDrops(level.getBlockState(blockPos), (ServerLevel) level, blockPos, null, null, mergedStack);
 
         // Do any post drop processing here. Skills etc...
 
@@ -64,7 +74,7 @@ public class DropUtil
 
                 for (ItemStack stack : drops)
                 {
-                    Optional<FurnaceRecipe> recipeFor = world.getRecipeManager().getRecipeFor(IRecipeType.SMELTING, new Inventory(stack), world);
+                    Optional<FurnaceRecipe> recipeFor = level.getRecipeManager().getRecipeFor(RecipeType.SMELTING, new Inventory(stack), level);
 
                     if (recipeFor.isPresent())
                     {

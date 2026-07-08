@@ -5,12 +5,10 @@ import com.willr27.blocklings.entity.blockling.goal.config.iteminfo.ItemInfo;
 import com.willr27.blocklings.entity.blockling.task.BlocklingTasks;
 import com.willr27.blocklings.entity.blockling.task.config.ItemConfigurationTypeProperty;
 import com.willr27.blocklings.inventory.AbstractInventory;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.Direction;
-import net.minecraftforge.items.CapabilityItemHandler;
-import net.minecraftforge.items.IItemHandler;
+import net.minecraft.core.Direction;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.entity.BlockEntity;
 
 import javax.annotation.Nonnull;
 import java.util.UUID;
@@ -33,7 +31,7 @@ public class BlocklingDepositContainerGoal extends BlocklingContainerGoal
     @Override
     protected boolean tryTransferItems(@Nonnull ContainerInfo containerInfo, boolean simulate)
     {
-        TileEntity tileEntity = containerAsTileEntity(containerInfo);
+        BlockEntity tileEntity = containerAsTileEntity(containerInfo);
 
         if (tileEntity == null)
         {

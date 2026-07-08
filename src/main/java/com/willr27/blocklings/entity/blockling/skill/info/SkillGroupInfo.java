@@ -1,10 +1,7 @@
 package com.willr27.blocklings.entity.blockling.skill.info;
 
-import com.willr27.blocklings.client.gui.texture.Texture;
 import com.willr27.blocklings.client.gui.texture.Textures;
 import com.willr27.blocklings.util.BlocklingsTranslationTextComponent;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.TranslationTextComponent;
 
 import javax.annotation.Nonnull;
 import java.util.UUID;
