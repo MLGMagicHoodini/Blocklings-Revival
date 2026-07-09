@@ -1,25 +1,56 @@
+### Blocklings Revival
 
-Installation information
-=======
+**Blocklings Revival** is a community-led continuation of **Blocklings** by **Willr27**, maintained and updated to keep the mod playable and relevant on modern modloaders.
 
-This template repository can be directly cloned to get you started with a new
-mod. Simply create a new repository cloned from this one, by following the
-instructions provided by [GitHub](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template).
+---
 
-Once you have your clone, simply open the repository in the IDE of your choice. The usual recommendation for an IDE is either IntelliJ IDEA or Eclipse.
+### Ownership and Team
 
-If at any point you are missing libraries in your IDE, or you've run into problems you can
-run `gradlew --refresh-dependencies` to refresh the local cache. `gradlew clean` to reset everything 
-{this does not affect your code} and then start the process again.
+- **Project owner**: **MLGMagicHoodini**  
+- **Current updater / maintainer**: **Mick**  
+- **Team status**: The core team is **not volunteer**; contributors who wish to join may apply.
 
-Mapping Names:
-============
-By default, the MDK is configured to use the official mapping names from Mojang for methods and fields 
-in the Minecraft codebase. These names are covered by a specific license. All modders should be aware of this
-license. For the latest license text, refer to the mapping file itself, or the reference copy here:
-https://github.com/NeoForged/NeoForm/blob/main/Mojang.md
+**Apply to join the team:** https://forms.gle/azFWYeNQUXCsAy4U8
 
-Additional Resources: 
-==========
-Community Documentation: https://docs.neoforged.net/  
-NeoForged Discord: https://discord.neoforged.net/
+---
+
+### What this fork provides
+
+- **Preservation** of the original Blocklings mechanics and assets where permitted.  
+- **Stability fixes** and quality-of-life improvements.  
+- **Ongoing maintenance** to keep the mod compatible with supported loaders and versions.
+
+---
+
+### Versions and Modloaders
+
+- **Supported Minecraft version (current):** **1.21.1**  
+- **Planned support:** **1.20.1**  
+- **Supported modloaders:** **NeoForge**, **Fabric**  
+- **Planned modloader support:** **Forge** (coming soon)
+
+---
+
+### Issues, Requests, and Contributions
+
+- **Bug reports:** open an issue on GitHub.  
+- **Feature requests:** open an issue on GitHub or post on Discord.  
+- **Pull requests:** **not accepted** at this time.  
+- **To join the team or propose larger contributions:** apply using the team application form above.
+
+---
+
+### Discussion and Support
+
+Join the community for discussion, help, and announcements:  
+**Discord:** https://discord.com/invite/andckTr4EN
+
+---
+
+### Credits and License
+
+- **Original author:** Willr27 — thank you for creating Blocklings.  
+- **Revival and maintenance:** MLGMagicHoodini, Mick, and the Blocklings Revival team.  
+- **License:** See the repository `LICENSE` file for full terms. Respect original asset and code licenses when reusing content.
+
+---
