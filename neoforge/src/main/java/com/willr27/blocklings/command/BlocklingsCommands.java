@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
@@ -44,8 +45,9 @@ public class BlocklingsCommands
     {
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
 
-        dispatcher.register(
-                Commands.literal("blockling").requires(source -> source.hasPermission(2)).then(
+        LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("blockling")
+                .requires(source -> source.hasPermission(2))
+                .then(
                         Commands.literal("set").then(
                                 Commands.literal("type").then(
                                         Commands.literal("primary").then(
@@ -61,7 +63,10 @@ public class BlocklingsCommands
                                 Commands.literal("xp").then(
                                         Commands.argument("level", new BlocklingLevelArgument()).then(
                                                 Commands.argument("value", IntegerArgumentType.integer(0))
-                                                        .executes(context -> executeXpCommand(context)))))));
+                                                        .executes(context -> executeXpCommand(context))))));
+
+        BlocklingDevTool.register(dispatcher, root);
+        dispatcher.register(root);
     }
 
     private static int executeTypeCommand(@Nonnull CommandContext<CommandSourceStack> context, boolean natural)

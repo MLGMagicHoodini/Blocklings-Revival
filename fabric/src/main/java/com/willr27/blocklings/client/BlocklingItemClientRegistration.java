@@ -1,16 +1,21 @@
 package com.willr27.blocklings.client;
 
 import com.willr27.blocklings.Blocklings;
+import com.willr27.blocklings.entity.BlocklingsItems;
+import net.minecraft.client.renderer.item.ItemProperties;
 
 /**
- * Creative / dropped blockling items use {@code custom_model_data} (see BlocklingItem.applyTypeModel).
- * Kept as a client hook in case future predicates are needed.
+ * Fabric client registration for blockling item model overrides.
  */
 public final class BlocklingItemClientRegistration {
     private BlocklingItemClientRegistration() {
     }
 
     public static void registerItemModelsProperties() {
-        Blocklings.LOGGER.debug("Blockling item models use CustomModelData overrides");
+        ItemProperties.register(
+                BlocklingsItems.BLOCKLING,
+                BlocklingItemModelProperties.TYPE_PROPERTY,
+                BlocklingItemModelProperties.createTypeProperty());
+        Blocklings.LOGGER.debug("Registered item property {}", BlocklingItemModelProperties.TYPE_PROPERTY);
     }
 }

@@ -17,14 +17,18 @@ import net.minecraft.world.level.levelgen.Heightmap;
 
 /**
  * Natural spawn registration for Fabric.
- * Weight matches the legacy Forge port (100) so blocklings appear roughly as often as common animals.
- * <p>
+ * Mirrors NeoForge biome modifiers:
+ * <ul>
+ *   <li>overworld / nether / end — weight 100</li>
+ *   <li>plains / forest — extra weight 40 (stacked on overworld)</li>
+ * </ul>
  * Some biomes (oceans, beaches, stony shore, etc.) have creatureSpawnProbability = 0, which means
  * adding a CREATURE spawn entry alone never produces pack spawning. We bump that probability so
  * blocklings (and other creatures) can actually attempt to spawn there.
  */
 public final class EntityGeneration {
     private static final int SPAWN_WEIGHT = 100;
+    private static final int BIOME_BONUS_WEIGHT = 40;
     private static final int SPAWN_MIN = 1;
     private static final int SPAWN_MAX = 3;
     private static final float MIN_CREATURE_SPAWN_PROBABILITY = 0.1f;
@@ -47,20 +51,26 @@ public final class EntityGeneration {
                 .add(ModificationPhase.ADDITIONS, BiomeSelectors.foundInOverworld(), context ->
                         context.getSpawnSettings().setCreatureSpawnProbability(MIN_CREATURE_SPAWN_PROBABILITY));
 
-        addSpawns(BiomeTags.IS_OVERWORLD);
-        addSpawns(BiomeTags.IS_NETHER);
-        addSpawns(BiomeTags.IS_END);
+        addSpawns(BiomeTags.IS_OVERWORLD, SPAWN_WEIGHT);
+        addSpawns(BiomeTags.IS_NETHER, SPAWN_WEIGHT);
+        addSpawns(BiomeTags.IS_END, SPAWN_WEIGHT);
+        // Match NeoForge plains/forest biome_modifier extras (weight 40 stacked on overworld).
+        // BiomeTags.IS_PLAINS does not exist in 1.21.1 — use the same #minecraft:is_plains tag as NeoForge JSON.
+        addSpawns(TagKey.create(net.minecraft.core.registries.Registries.BIOME,
+                ResourceLocation.withDefaultNamespace("is_plains")), BIOME_BONUS_WEIGHT);
+        addSpawns(BiomeTags.IS_FOREST, BIOME_BONUS_WEIGHT);
 
-        Blocklings.LOGGER.info("Blocklings natural spawns registered (weight {}, groups {}-{})", SPAWN_WEIGHT, SPAWN_MIN, SPAWN_MAX);
+        Blocklings.LOGGER.info("Blocklings natural spawns registered (weight {}, plains/forest +{}, groups {}-{})",
+                SPAWN_WEIGHT, BIOME_BONUS_WEIGHT, SPAWN_MIN, SPAWN_MAX);
         BlocklingSpawnDiagnostics.LOG.info("[SpawnDebug] registration complete — dump runs on server start");
     }
 
-    private static void addSpawns(TagKey<Biome> tag) {
+    private static void addSpawns(TagKey<Biome> tag, int weight) {
         BiomeModifications.addSpawn(
                 BiomeSelectors.tag(tag),
                 MobCategory.CREATURE,
                 BlocklingsEntityTypes.BLOCKLING,
-                SPAWN_WEIGHT,
+                weight,
                 SPAWN_MIN,
                 SPAWN_MAX);
     }

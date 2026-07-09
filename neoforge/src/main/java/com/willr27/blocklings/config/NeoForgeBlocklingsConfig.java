@@ -1,6 +1,7 @@
 package com.willr27.blocklings.config;
 
 import com.electronwill.nightconfig.core.Config;
+import com.willr27.blocklings.entity.blockling.BlocklingType;
 import com.willr27.blocklings.entity.blockling.goal.goals.gather.BlocklingWoodcutGoal;
 import com.willr27.blocklings.util.WorldUtil;
 import net.neoforged.fml.ModContainer;
@@ -10,7 +11,9 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The class used to handle the Blocklings' config.
@@ -115,6 +118,67 @@ public class NeoForgeBlocklingsConfig
         @Nonnull
         public final NeoForgeBlocklingAbilityConfig abilities;
 
+        @Nonnull
+        public final ModConfigSpec.DoubleValue evolveSuccessChance;
+
+        @Nonnull
+        public final ModConfigSpec.DoubleValue primaryTypeChangeChance;
+
+        @Nonnull
+        public final ModConfigSpec.BooleanValue spawnEnabled;
+
+        @Nonnull
+        public final ModConfigSpec.IntValue nearbyCap;
+
+        @Nonnull
+        public final ModConfigSpec.DoubleValue nearbyRadius;
+
+        @Nonnull
+        public final ModConfigSpec.BooleanValue preventDuplicateNearbyType;
+
+        @Nonnull
+        public final Map<String, TypeSpawnConfig> typeSpawns = new LinkedHashMap<>();
+
+        /**
+         * Per-type spawn tuning.
+         */
+        public static final class TypeSpawnConfig
+        {
+            @Nonnull
+            public final ModConfigSpec.BooleanValue enabled;
+            @Nonnull
+            public final ModConfigSpec.IntValue spawnWeight;
+            @Nonnull
+            public final ModConfigSpec.ConfigValue<List<? extends String>> extraBiomes;
+            @Nonnull
+            public final ModConfigSpec.ConfigValue<String> biomeMode;
+
+            private TypeSpawnConfig(@Nonnull ModConfigSpec.Builder builder, @Nonnull BlocklingType type)
+            {
+                builder.push(type.key);
+
+                enabled = builder
+                        .comment("Whether this blockling type can be chosen for natural/chunk spawns.")
+                        .define("enabled", true);
+
+                spawnWeight = builder
+                        .comment("Relative weight among valid candidates at a spawn location. Higher = more common.")
+                        .defineInRange("spawnWeight", BlocklingSpawnConfig.defaultWeightFor(type), 0, 10000);
+
+                extraBiomes = builder
+                        .comment("Extra biome ids (minecraft:plains) or tags (#minecraft:is_forest).",
+                                "With biomeMode AND: must also match Java spawn predicates.",
+                                "With biomeMode OVERRIDE: if non-empty, only this list is used (predicates ignored).")
+                        .defineList("extraBiomes", () -> new ArrayList<>(), s -> true);
+
+                biomeMode = builder
+                        .comment("AND = predicates + extraBiomes (if any). OVERRIDE = extraBiomes only when non-empty.")
+                        .define("biomeMode", "AND");
+
+                builder.pop();
+            }
+        }
+
         /**
          * @param builder the builder used to create the config.
          */
@@ -123,6 +187,45 @@ public class NeoForgeBlocklingsConfig
             Config.setInsertionOrderPreserved(true);
 
             abilities = new NeoForgeBlocklingAbilityConfig(builder);
+
+            builder.push("Upgrade");
+
+            evolveSuccessChance = builder
+                    .comment("Chance (0.0–1.0) that crouching + food evolves the natural blockling type. Original default: 0.25.")
+                    .defineInRange("evolveSuccessChance", 0.25D, 0.0D, 1.0D);
+
+            primaryTypeChangeChance = builder
+                    .comment("Chance (0.0–1.0) that food without crouching changes the primary type. Original default: 0.25.")
+                    .defineInRange("primaryTypeChangeChance", 0.25D, 0.0D, 1.0D);
+
+            builder.pop();
+
+            builder.push("Spawn");
+
+            spawnEnabled = builder
+                    .comment("Master switch for natural/chunk blockling spawning.")
+                    .define("enabled", true);
+
+            nearbyCap = builder
+                    .comment("Max untamed blocklings allowed within nearbyRadius (0 = unlimited).")
+                    .defineInRange("nearbyCap", 3, 0, 64);
+
+            nearbyRadius = builder
+                    .comment("Horizontal radius used for nearbyCap and duplicate-type checks.")
+                    .defineInRange("nearbyRadius", 64.0D, 1.0D, 256.0D);
+
+            preventDuplicateNearbyType = builder
+                    .comment("If true, reject a spawn when another nearby blockling already has the same primary type.")
+                    .define("preventDuplicateNearbyType", true);
+
+            builder.push("types");
+            for (BlocklingType type : BlocklingType.TYPES)
+            {
+                typeSpawns.put(type.key, new TypeSpawnConfig(builder, type));
+            }
+            builder.pop();
+
+            builder.pop();
 
             builder.push("Mining");
 

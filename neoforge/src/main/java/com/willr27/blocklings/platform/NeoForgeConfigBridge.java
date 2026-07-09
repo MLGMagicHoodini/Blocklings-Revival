@@ -1,12 +1,14 @@
 package com.willr27.blocklings.platform;
 
 import com.willr27.blocklings.config.BlocklingAbilityConfig;
+import com.willr27.blocklings.config.BlocklingSpawnConfig;
 import com.willr27.blocklings.config.BlocklingsConfig;
 import com.willr27.blocklings.config.NeoForgeBlocklingAbilityConfig;
 import com.willr27.blocklings.config.NeoForgeBlocklingsConfig;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 import javax.annotation.Nonnull;
+import java.util.Map;
 import java.util.function.Supplier;
 
 public final class NeoForgeConfigBridge
@@ -33,7 +35,29 @@ public final class NeoForgeConfigBridge
         common.additionalCrops = asSupplier(neo.additionalCrops);
         common.excludedCrops = asSupplier(neo.excludedCrops);
 
+        common.evolveSuccessChance = asSupplier(neo.evolveSuccessChance);
+        common.primaryTypeChangeChance = asSupplier(neo.primaryTypeChangeChance);
+
+        bindSpawn(neo, common.spawn);
         bindAbilities(neo.abilities, common.abilities);
+    }
+
+    private static void bindSpawn(@Nonnull NeoForgeBlocklingsConfig.Common neo, @Nonnull BlocklingSpawnConfig spawn)
+    {
+        spawn.enabled = asSupplier(neo.spawnEnabled);
+        spawn.nearbyCap = asSupplier(neo.nearbyCap);
+        spawn.nearbyRadius = asSupplier(neo.nearbyRadius);
+        spawn.preventDuplicateNearbyType = asSupplier(neo.preventDuplicateNearbyType);
+
+        for (Map.Entry<String, NeoForgeBlocklingsConfig.Common.TypeSpawnConfig> entry : neo.typeSpawns.entrySet())
+        {
+            BlocklingSpawnConfig.TypeConfig typeConfig = spawn.forKey(entry.getKey());
+            NeoForgeBlocklingsConfig.Common.TypeSpawnConfig neoType = entry.getValue();
+            typeConfig.enabled = asSupplier(neoType.enabled);
+            typeConfig.spawnWeight = asSupplier(neoType.spawnWeight);
+            typeConfig.extraBiomes = asSupplier(neoType.extraBiomes);
+            typeConfig.biomeMode = asSupplier(neoType.biomeMode);
+        }
     }
 
     private static void bindClient()

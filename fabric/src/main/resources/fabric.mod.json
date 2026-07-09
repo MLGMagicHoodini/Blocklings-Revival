@@ -15,8 +15,8 @@
     "client": ["com.willr27.blocklings.BlocklingsFabricClient"]
   },
   "depends": {
-    "fabricloader": ">=0.16.0",
+    "fabricloader": ">=0.16.9",
     "minecraft": "1.21.1",
-    "fabric-api": "*"
+    "fabric-api": ">=0.109.0"
   }
 }

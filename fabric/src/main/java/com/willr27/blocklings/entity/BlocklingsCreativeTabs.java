@@ -1,7 +1,6 @@
 package com.willr27.blocklings.entity;
 
 import com.willr27.blocklings.Blocklings;
-import com.willr27.blocklings.entity.blockling.BlocklingEntity;
 import com.willr27.blocklings.entity.blockling.BlocklingType;
 import com.willr27.blocklings.item.BlocklingItem;
 import net.minecraft.core.Registry;
@@ -19,7 +18,7 @@ public final class BlocklingsCreativeTabs {
                     .icon(() -> BlocklingsItems.BLOCKLING_SPAWN_EGG.getDefaultInstance())
                     .displayItems((parameters, output) -> {
                         output.accept(BlocklingsItems.BLOCKLING_SPAWN_EGG);
-                        output.accept(BlocklingsItems.BLOCKLING);
+                        // One preview per type (typed icon + name). Same as NeoForge.
                         for (BlocklingType type : BlocklingType.TYPES) {
                             output.accept(BlocklingItem.createPreview(type));
                         }

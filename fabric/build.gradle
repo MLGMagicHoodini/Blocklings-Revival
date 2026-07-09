@@ -11,6 +11,12 @@ dependencies {
     }
     modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
+
+    // Bundled for Fabric TOML config (NeoForge already ships NightConfig).
+    include(implementation("com.electronwill.night-config:core:3.6.7"))
+    include(implementation("com.electronwill.night-config:toml:3.6.7"))
+    // Used by EventBus generics; NeoForge resolves via common runtime, Fabric must jar-in-jar.
+    include(implementation("net.jodah:typetools:0.6.3"))
 }
 
 loom {
@@ -31,4 +37,8 @@ loom {
             runDir('runs/server')
         }
     }
+}
+
+remapJar {
+    archiveFileName.set("${mod_id}-fabric-${minecraft_version}-${version}.jar")
 }

@@ -21,8 +21,7 @@ public final class BlocklingsCreativeTabs {
                     .icon(() -> BlocklingsItems.BLOCKLING_SPAWN_EGG.get().getDefaultInstance())
                     .displayItems((parameters, output) -> {
                         output.accept(BlocklingsItems.BLOCKLING_SPAWN_EGG.get());
-                        // Generic blockling item: natural blockling (random type when placed without preset data).
-                        output.accept(BlocklingsItems.BLOCKLING.get());
+                        // One preview per type (typed icon + name). No bare generic item — it looked identical to grass.
                         for (BlocklingType type : BlocklingType.TYPES)
                         {
                             output.accept(BlocklingItem.createPreview(type));
