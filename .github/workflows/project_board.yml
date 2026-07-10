@@ -1,0 +1,216 @@
+name: Project Board Automation
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SETUP REQUIRED — fill in these two values before enabling this workflow:
+#
+#   PROJECT_NUMBER : the number in your project URL
+#                    e.g. https://github.com/orgs/YourOrg/projects/3  →  3
+#
+#   You also need a repo secret called PROJECT_TOKEN (a classic PAT with the
+#   "project" scope, or a fine-grained token with "Read and write" on Projects).
+#   Add it at:  Settings → Secrets and variables → Actions → New repository secret
+#
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# COLUMN LOGIC OVERVIEW
+# ──────────────────────
+#  Open        ← every new issue lands here first
+#  Issues      ← bug reports (🐛 Bug label) and anything being investigated
+#  Denied      ← rejected suggestions / closed-without-fix
+#  Todo        ← accepted features/tasks that will be done eventually
+#                (triggered by a priority label being added to a feature,
+#                 or by manually adding 💡 Feature after review)
+#  In Progress ← actively being worked on (🛠️ W.I.P)
+#  Testing     ← implemented, now being verified (⚠️ Testing)
+#  Finished    ← fully done, shipped (✅ Fixed / 📋 Finished)
+# ─────────────────────────────────────────────────────────────────────────────
+
+env:
+  PROJECT_NUMBER: 1          # ← change this to your project number
+
+on:
+  issues:
+    types: [opened, labeled, closed, reopened]
+
+jobs:
+  move-card:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: read
+
+    steps:
+      - name: Move issue to correct project column
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const issue      = context.payload.issue;
+            const action     = context.payload.action;
+            const labels     = issue.labels.map(l => l.name);
+            const addedLabel = context.payload.label?.name ?? "";
+
+            let targetStatus = null;
+
+            if (action === "opened") {
+              // Every new ticket starts in Open for triage
+              targetStatus = "Open";
+
+            } else if (action === "labeled") {
+
+              // ── Bug label → Issues column ──────────────────────────────────
+              // Bugs skip Open and go straight to Issues for tracking
+              if (addedLabel === "🐛 Bug") {
+                targetStatus = "Issues";
+
+              // ── Feature label → stays in Open ─────────────────────────────
+              // Features need review before being accepted; leave them in Open.
+              // (No targetStatus set — card stays where it is.)
+
+              // ── Investigating → Issues ────────────────────────────────────
+              // Used for bugs being looked into, or features needing more info
+              } else if (addedLabel === "🔎 Investigating") {
+                targetStatus = "Issues";
+
+              // ── Priority label on a Feature → Todo ────────────────────────
+              // Adding a priority label to a feature means it's been accepted
+              } else if (
+                ["🔴 Top Priority", "🟠 High Priority", "🟡 Medium Priority",
+                 "🔵 Low Priority", "🟣 Nice to Have", "❗ Major"].includes(addedLabel)
+              ) {
+                // Only move to Todo if it's a feature (not a bug, which lives in Issues)
+                if (labels.includes("💡 Feature") && !labels.includes("🐛 Bug")) {
+                  targetStatus = "Todo";
+                }
+                // Bugs with priority labels stay in Issues — priority is just context there
+
+              // ── Concept / Mechanics etc. accepted → Todo ──────────────────
+              // If a maintainer adds one of these organisational labels it signals
+              // the suggestion has been reviewed and accepted
+              } else if (
+                ["Concept", "Mechanics", "New Type", "Compatibility",
+                 "Command"].includes(addedLabel) &&
+                labels.includes("💡 Feature")
+              ) {
+                targetStatus = "Todo";
+
+              // ── Active work ───────────────────────────────────────────────
+              } else if (addedLabel === "🛠️ W.I.P") {
+                targetStatus = "In Progress";
+
+              // ── Testing ───────────────────────────────────────────────────
+              } else if (addedLabel === "⚠️ Testing") {
+                targetStatus = "Testing";
+
+              // ── Done ──────────────────────────────────────────────────────
+              } else if (addedLabel === "✅ Fixed" || addedLabel === "📋 Finished") {
+                targetStatus = "Finished";
+
+              // ── Denied ────────────────────────────────────────────────────
+              } else if (addedLabel === "❌ Denied") {
+                targetStatus = "Denied";
+              }
+
+            } else if (action === "closed") {
+              // Closed with a done label → Finished; otherwise → Denied
+              if (labels.includes("✅ Fixed") || labels.includes("📋 Finished")) {
+                targetStatus = "Finished";
+              } else {
+                targetStatus = "Denied";
+              }
+
+            } else if (action === "reopened") {
+              // Bugs go back to Issues; features/other go back to Todo
+              targetStatus = labels.includes("🐛 Bug") ? "Issues" : "Todo";
+            }
+
+            if (!targetStatus) {
+              console.log("No column change needed for this event.");
+              return;
+            }
+
+            console.log(`Target status: "${targetStatus}"`);
+
+            // ── Resolve project node ID and Status field ──────────────────────
+            const repoOwner = context.repo.owner;
+
+            async function fetchProject(ownerType) {
+              return github.graphql(`
+                query($login: String!, $number: Int!) {
+                  ${ownerType}(login: $login) {
+                    projectV2(number: $number) {
+                      id
+                      fields(first: 20) {
+                        nodes {
+                          ... on ProjectV2SingleSelectField {
+                            id name
+                            options { id name }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `, { login: repoOwner, number: parseInt(process.env.PROJECT_NUMBER) });
+            }
+
+            let project = (await fetchProject("user")).user?.projectV2;
+            if (!project) {
+              project = (await fetchProject("organization")).organization?.projectV2;
+            }
+            if (!project) {
+              core.setFailed(
+                `Could not find project #${process.env.PROJECT_NUMBER} for ${repoOwner}. ` +
+                "Check PROJECT_NUMBER and that PROJECT_TOKEN has the 'project' scope."
+              );
+              return;
+            }
+
+            const projectId  = project.id;
+            const statusField = project.fields.nodes.find(
+              f => f?.name?.toLowerCase() === "status"
+            );
+            if (!statusField) {
+              core.setFailed(
+                'No "Status" single-select field found on the project. ' +
+                'Make sure your board field is named exactly "Status".'
+              );
+              return;
+            }
+
+            const option = statusField.options.find(
+              o => o.name.toLowerCase() === targetStatus.toLowerCase()
+            );
+            if (!option) {
+              core.setFailed(
+                `Status option "${targetStatus}" not found. ` +
+                `Available: ${statusField.options.map(o => o.name).join(", ")}`
+              );
+              return;
+            }
+
+            // ── Add issue to project (no-op if already present) ───────────────
+            const addResult = await github.graphql(`
+              mutation($projectId: ID!, $contentId: ID!) {
+                addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {
+                  item { id }
+                }
+              }
+            `, { projectId, contentId: issue.node_id });
+
+            const itemId = addResult.addProjectV2ItemById.item.id;
+
+            // ── Set the Status field ──────────────────────────────────────────
+            await github.graphql(`
+              mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: $projectId
+                  itemId:    $itemId
+                  fieldId:   $fieldId
+                  value:     { singleSelectOptionId: $optionId }
+                }) {
+                  projectV2Item { id }
+                }
+              }
+            `, { projectId, itemId, fieldId: statusField.id, optionId: option.id });
+
+            console.log(`✅  Issue #${issue.number} → "${targetStatus}"`);
