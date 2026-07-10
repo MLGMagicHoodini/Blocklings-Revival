@@ -18,7 +18,7 @@ jobs:
             const body = context.payload.issue.body ?? "";
             const labels = [];
 
-            // Helper: extract the value under a given section heading
+            // ── Helper: extract value under a section heading ────────────────
             function getField(heading) {
               const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
               const regex = new RegExp(
@@ -30,40 +30,67 @@ jobs:
             }
 
             // ── Mod loader (bug reports) ─────────────────────────────────────
-            // Field is a free-text input so we check for keywords
             const loader = getField("Mod loader & version").toLowerCase();
-            if (loader.includes("neoforge")) {
-              labels.push("🦊 NeoForge");
-            } else if (loader.includes("fabric")) {
-              labels.push("📜 Fabric");
-            } else if (loader.includes("forge")) {
-              labels.push("🔨 Forge");
-            }
+            if (loader.includes("neoforge"))    labels.push("🦊 NeoForge");
+            else if (loader.includes("fabric")) labels.push("📜 Fabric");
+            else if (loader.includes("forge"))  labels.push("🔨 Forge");
 
             // ── Minecraft version (bug reports) ──────────────────────────────
             const mcVersion = getField("Minecraft version");
-            if (mcVersion.includes("1.21")) {
-              labels.push("🥇 1.21.1");
-            } else if (mcVersion.includes("1.20")) {
-              labels.push("🥈 1.20.1");
+            if      (mcVersion.includes("1.21")) labels.push("🥇 1.21.1");
+            else if (mcVersion.includes("1.20")) labels.push("🥈 1.20.1");
+
+            // ── Severity (bug reports) ────────────────────────────────────────
+            const severity = getField("Severity");
+            const severityMap = {
+              "Game-Breaking": "❗ Major",
+              "Crash":         "⚠️ Crash",
+              "Top Priority":  "🔴 Top Priority",
+              "High Priority": "🟠 High Priority",
+              "Medium Priority": "🟡 Medium Priority",
+              "Low Priority":  "🔵 Low Priority",
+              "Nice-to-Fix":   "🟣 Nice to Have",
+              "Visual Only":   "⚪ Visual Only",
+            };
+            for (const [key, label] of Object.entries(severityMap)) {
+              if (severity.includes(key)) { labels.push(label); break; }
             }
 
-            // ── Category dropdown (both templates) ───────────────────────────
-            // Maps dropdown option text → label. Add more here as needed.
-            const category = getField("What part of the mod is affected?") ||
-                             getField("Category");
+            // ── Category (both templates) ────────────────────────────────────
+            // Reads from either bug or feature template heading
+            const category =
+              getField("What part of the mod is affected?") ||
+              getField("Category");
+
             const categoryMap = {
-              "Blockling behavior": null,   // no matching label yet
-              "Combat":            null,
-              "Blocks":            null,
-              "Items":             null,
-              "Config":            null,
-              "UI":                null,
-              "World generation":  null,
-              "Crash":             null,
-              "Mod compatibility": null,
+              // Bug report categories
+              "Blockling behavior": "Mechanics",
+              "Combat / skills":    "Mechanics",
+              "Blocks / structures":"Mechanics",
+              "Items / equipment":  "Mechanics",
+              "World generation":   "Mechanics",
+              "Mod compatibility":  "Compatibility",
+              "Crash":              "⚠️ Crash",
+
+              // Feature request categories
+              "Blockling Behavior": "Mechanics",
+              "New Blockling Type": "New Type",
+              "Combat":             "Mechanics",
+              "Skills":             "Mechanics",
+              "Blocks":             "Mechanics",
+              "Structures":         "Mechanics",
+              "Items":              "Mechanics",
+              "Equipment":          "Mechanics",
+              "Mod Compatibility":  "Compatibility",
+              // Config, UI, World Generation have no matching label yet
             };
-            // (Extend this map once you add category-specific labels)
+
+            for (const [key, label] of Object.entries(categoryMap)) {
+              if (category.includes(key) && label && !labels.includes(label)) {
+                labels.push(label);
+                break;
+              }
+            }
 
             // ── Apply all collected labels ────────────────────────────────────
             if (labels.length > 0) {
