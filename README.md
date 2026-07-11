@@ -4,11 +4,11 @@
 
 ---
 
-### Ownership and Team
+### Ownership & Team
 
-- **Project owner**: **MLGMagicHoodini**  
-- **Current updater / maintainer**: **Mick**  
-- **Team status**: The core team is **not volunteer**; contributors who wish to join may apply.
+- **Project Owner**: **MLGMagicHoodini**  
+- **Current Updater / Maintainer**: **Mick**  
+- **Team Status**: Contributors who wish to join may apply. Using the Form below.
 
 **Apply to join the team:** https://forms.gle/azFWYeNQUXCsAy4U8
 
@@ -17,40 +17,38 @@
 ### What this fork provides
 
 - **Preservation** of the original Blocklings mechanics and assets where permitted.  
-- **Stability fixes** and quality-of-life improvements.  
-- **Ongoing maintenance** to keep the mod compatible with supported loaders and versions.
+- **Stability Fixes** and quality-of-life improvements.  
+- **Ongoing Maintenance** to keep the mod compatible with supported loaders and versions.
 
 ---
 
-### Versions and Modloaders
+### Versions & Modloaders
 
-- **Supported Minecraft version (current):** **1.21.1**  
-- **Planned support:** **1.20.1**  
-- **Supported modloaders:** **NeoForge**, **Fabric**  
-- **Planned modloader support:** **Forge** (coming soon)
-
----
-
-### Issues, Requests, and Contributions
-
-- **Bug reports:** open an issue on GitHub.  
-- **Feature requests:** open an issue on GitHub or post on Discord.  
-- **Pull requests:** **not accepted** at this time.  
-- **To join the team or propose larger contributions:** apply using the team application form above.
+- **Supported Minecraft Version (current):** **1.21.1**  
+- **Planned Support:** **1.20.1**
+- **Supported Modloaders:** **NeoForge**, **Fabric**  
+- **Planned Modloader Support:** **Forge**
 
 ---
 
-### Discussion and Support
+### Issues & Requests
+
+- **Bug Reports:** open an issue on GitHub.  
+- **Feature Requests:** open an issue on GitHub or post on Discord.  
+
+---
+
+### Discussion & Support
 
 Join the community for discussion, help, and announcements:  
 **Discord:** https://discord.com/invite/andckTr4EN
 
 ---
 
-### Credits and License
+### Credits & License
 
-- **Original author:** Willr27 — thank you for creating Blocklings.  
-- **Revival and maintenance:** MLGMagicHoodini, Mick, and the Blocklings Revival team.  
+- **Original Author:** Willr27, thank you for creating Blocklings.  
+- **Revival and Maintenance:** MLGMagicHoodini, Mick, and the Testers.  
 - **License:** See the repository `LICENSE` file for full terms. Respect original asset and code licenses when reusing content.
 
 ---
