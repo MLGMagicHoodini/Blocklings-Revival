@@ -99,7 +99,7 @@ jobs:
 
               // ── Testing ───────────────────────────────────────────────────
               } else if (addedLabel === "⚠️ Testing") {
-                targetStatus = "Testing";
+                targetStatus = "⚠️ Testing Phase ⚠️";
 
               // ── Done ──────────────────────────────────────────────────────
               } else if (addedLabel === "✅ Fixed" || addedLabel === "📋 Finished") {
