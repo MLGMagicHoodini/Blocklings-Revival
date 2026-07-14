@@ -27,7 +27,7 @@ public interface BlocklingAbilityHandler
     {
     }
 
-    /** Slow tick for expensive passives (wood saplings, dirt tilling). */
+    /** Slow tick for expensive passives (wood saplings, etc.). */
     default void tickPassiveSlow(@Nonnull BlocklingEntity blockling)
     {
     }

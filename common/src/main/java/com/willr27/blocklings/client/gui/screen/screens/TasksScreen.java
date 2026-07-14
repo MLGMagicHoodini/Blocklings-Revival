@@ -80,6 +80,12 @@ public class TasksScreen extends TabbedScreen
     private Task currentTask;
 
     /**
+     * Stable listener so subscribe/unsubscribe use the same instance (method refs are not equal).
+     */
+    @Nonnull
+    private final com.willr27.blocklings.util.event.EventHandler.Handler<Task.TypeChangedEvent> taskTypeChangedHandler = this::onTaskTypeChanged;
+
+    /**
      * @param blockling the blockling associated with the screen.
      */
     public TasksScreen(@Nonnull BlocklingEntity blockling)
@@ -279,8 +285,17 @@ public class TasksScreen extends TabbedScreen
         taskTypeComboBox.setMarginTop(3.0);
         taskTypeComboBox.eventBus.subscribe((BaseControl c, SelectionChangedEvent<ComboBoxControl.Item> e) ->
         {
+            if (e.newItem == null || e.newItem.value == null)
+            {
+                return;
+            }
+
             TaskType type = (TaskType) e.newItem.value;
-            task.setType(type);
+            // Ignore echo from setSelectedItem during tab rebuild.
+            if (task.getType() != type)
+            {
+                task.setType(type);
+            }
         });
 
         for (TaskType taskType : BlocklingTasks.TASK_TYPES.stream().filter(t -> blockling.getTasks().taskTypeUnlockedMap.get(t)).collect(Collectors.toList()))
@@ -292,7 +307,7 @@ public class TasksScreen extends TabbedScreen
 
             if (taskType == task.getType())
             {
-                taskTypeComboBox.setSelectedItem(item);
+                taskTypeComboBox.setSelectedItem(item, false);
             }
             else
             {
@@ -306,7 +321,7 @@ public class TasksScreen extends TabbedScreen
 
         if (BlocklingTasks.NULL == task.getType())
         {
-            taskTypeComboBox.setSelectedItem(item);
+            taskTypeComboBox.setSelectedItem(item, false);
         }
         else
         {
@@ -345,10 +360,18 @@ public class TasksScreen extends TabbedScreen
      */
     private void onTaskTypeChanged(@Nonnull Task.TypeChangedEvent typeChangedEvent)
     {
+        Task task = typeChangedEvent.task;
+
+        // Config may already be closed, or unsubscribe failed with a previous method-ref instance.
+        if (currentTask == null || task == null || currentTask != task)
+        {
+            return;
+        }
+
         try
         {
-            initConfigTabs(typeChangedEvent.task);
-            configNameField.setText(currentTask.getCustomName());
+            initConfigTabs(task);
+            configNameField.setText(task.getCustomName());
         }
         catch (Exception e)
         {
@@ -361,6 +384,11 @@ public class TasksScreen extends TabbedScreen
      */
     public void openConfig(@Nonnull Task task)
     {
+        if (currentTask != null)
+        {
+            currentTask.onTypeChanged.unsubscribe(taskTypeChangedHandler);
+        }
+
         currentTask = task;
 
         tabbedUIControl.backgroundControl.setBackgroundTexture(Textures.Tasks.CONFIG_BACKGROUND);
@@ -368,7 +396,7 @@ public class TasksScreen extends TabbedScreen
         configContainer.setVisibility(Visibility.VISIBLE);
         configNameField.setText(currentTask.getCustomName());
 
-        currentTask.onTypeChanged.subscribe(this::onTaskTypeChanged);
+        currentTask.onTypeChanged.subscribe(taskTypeChangedHandler);
 
         initConfigTabs(currentTask);
     }
@@ -384,7 +412,7 @@ public class TasksScreen extends TabbedScreen
 
         if (currentTask != null)
         {
-            currentTask.onTypeChanged.unsubscribe(this::onTaskTypeChanged);
+            currentTask.onTypeChanged.unsubscribe(taskTypeChangedHandler);
         }
 
         currentTask = null;

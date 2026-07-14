@@ -3,6 +3,7 @@ package com.willr27.blocklings.event;
 import com.willr27.blocklings.Blocklings;
 import com.willr27.blocklings.entity.blockling.BlocklingDimensionTravel;
 import com.willr27.blocklings.entity.blockling.BlocklingEntity;
+import com.willr27.blocklings.entity.blockling.BlocklingStarterSpawn;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -20,6 +21,15 @@ import java.util.UUID;
 public class BlocklingDimensionEvents
 {
     private static final Set<UUID> PENDING_DIMENSION_SYNC = new HashSet<>();
+
+    @SubscribeEvent
+    public static void onPlayerLoggedIn(@Nonnull PlayerEvent.PlayerLoggedInEvent event)
+    {
+        if (event.getEntity() instanceof ServerPlayer player)
+        {
+            BlocklingStarterSpawn.onPlayerLogin(player);
+        }
+    }
 
     @SubscribeEvent
     public static void onPlayerChangedDimension(@Nonnull PlayerEvent.PlayerChangedDimensionEvent event)

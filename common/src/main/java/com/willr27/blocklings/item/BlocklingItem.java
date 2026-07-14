@@ -53,7 +53,9 @@ public class BlocklingItem extends Item {
     public static ItemStack createPreview(@Nonnull BlocklingType type)
     {
         ItemStack stack = BlocklingsRegistries.blocklingItemStack();
-        stack.set(DataComponents.CUSTOM_NAME, type.name.copy().withStyle(ChatFormatting.GOLD));
+        // Non-italic gold name: "Grass Blockling", "Diamond Blockling", …
+        stack.set(DataComponents.CUSTOM_NAME, Component.literal(type.name.getString() + " Blockling")
+                .withStyle(style -> style.withItalic(false).withColor(ChatFormatting.GOLD)));
 
         // Creative-tab previews: show baseline fresh-blockling stats (levels start at 1).
         int combatLevel = 1;
@@ -85,11 +87,58 @@ public class BlocklingItem extends Item {
         return stack;
     }
 
-    /** custom_model_data = type index + 1 (0 = generic fallback texture). */
+    /**
+     * Stores type index + 1 in {@link CustomModelData} (backup) and drives {@code blocklings:type} overrides.
+     */
     public static void applyTypeModel(@Nonnull ItemStack stack, @Nonnull BlocklingType type)
     {
         int index = BlocklingType.TYPES.indexOf(type);
         stack.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(Math.max(0, index) + 1));
+    }
+
+    @Nullable
+    public static BlocklingType getTypeFromStack(@Nonnull ItemStack stack)
+    {
+        CustomModelData data = stack.get(DataComponents.CUSTOM_MODEL_DATA);
+        if (data != null && data.value() > 0)
+        {
+            return BlocklingType.getTypeByIndex(data.value() - 1);
+        }
+
+        CompoundTag tag = getDataTag(stack);
+        if (tag.contains("entity"))
+        {
+            CompoundTag entity = tag.getCompound("entity");
+            if (entity.contains("blockling"))
+            {
+                String key = entity.getCompound("blockling").getString("type");
+                if (!key.isEmpty())
+                {
+                    return BlocklingType.find(key);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    @Override
+    @Nonnull
+    public Component getName(@Nonnull ItemStack stack)
+    {
+        if (stack.has(DataComponents.CUSTOM_NAME))
+        {
+            return super.getName(stack);
+        }
+
+        BlocklingType type = getTypeFromStack(stack);
+        if (type != null)
+        {
+            return Component.literal(type.name.getString() + " Blockling")
+                    .withStyle(style -> style.withItalic(false).withColor(ChatFormatting.GOLD));
+        }
+
+        return super.getName(stack);
     }
 
     /**
@@ -114,6 +163,7 @@ public class BlocklingItem extends Item {
 
         stackTag.putString("custom_name", blockling.getCustomName().getString());
         stackTag.putInt("health", blockling.getStats().getHealth());
+        stackTag.putFloat("health_exact", blockling.getHealth());
         stackTag.putInt("max_health", blockling.getStats().getMaxHealth());
         stackTag.putInt("combat_level", blockling.getStats().getLevelAttribute(BlocklingAttributes.Level.COMBAT).getValue());
         stackTag.putInt("mining_level", blockling.getStats().getLevelAttribute(BlocklingAttributes.Level.MINING).getValue());
@@ -156,6 +206,14 @@ public class BlocklingItem extends Item {
                     BlocklingType natural = BlocklingType.find(blocklingTag.getString("original_type"), tagVersion);
                     blockling.setNaturalBlocklingType(natural, false);
                     blockling.setBlocklingType(type, false);
+                    if (blocklingTag.contains("has_transformed"))
+                    {
+                        blockling.setHasTransformed(blocklingTag.getBoolean("has_transformed"), false);
+                    }
+                    else
+                    {
+                        blockling.setHasTransformed(natural != type, false);
+                    }
                     blockling.readAdditionalSaveData(entityTag);
                     // Creative typed items should match the preview size (1.0), not random natural spawn sizes.
                     CompoundTag bl = entityTag.getCompound("blockling");
@@ -199,6 +257,15 @@ public class BlocklingItem extends Item {
                 {
                     blockling.setCustomName(stackName.copy().withStyle(style -> style.withItalic(false)));
                 }
+            }
+
+            // Restore HP after attributes/type bonuses are applied (constructor + load can reset to full).
+            if (stackTag.contains("health"))
+            {
+                float savedHealth = stackTag.contains("health_exact")
+                        ? stackTag.getFloat("health_exact")
+                        : stackTag.getInt("health");
+                blockling.setHealth(Math.max(1.0f, Math.min(savedHealth, blockling.getMaxHealth())));
             }
 
             world.addFreshEntity(blockling);

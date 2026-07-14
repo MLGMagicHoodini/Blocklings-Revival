@@ -4,23 +4,7 @@ import com.google.common.collect.Multimap;
 import com.willr27.blocklings.entity.blockling.BlocklingEntity;
 import com.willr27.blocklings.entity.blockling.BlocklingType;
 import com.willr27.blocklings.interop.TinkersConstructProxy;
-import net.minecraft.core.Registry;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.SwordItem;
-import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraft.world.item.enchantment.Enchantments;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.fml.util.ObfuscationReflectionHelper;
-/*import net.minecraft.block.BlockState;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
@@ -39,7 +23,7 @@ import net.minecraft.nbt.ListNBT;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.registry.Registry;
 import net.minecraftforge.common.ToolType;
-import net.minecraftforge.fml.common.ObfuscationReflectionHelper;*/
+import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -508,11 +492,11 @@ public class ToolUtil
     public static List<Enchantment> findToolEnchantments(@Nonnull ItemStack stack)
     {
         List<Enchantment> enchantments = new ArrayList<>();
-        ListTag listNBT = stack.getEnchantmentTags();
+        ListNBT listNBT = stack.getEnchantmentTags();
 
         for (int i = 0; i < listNBT.size(); i++)
         {
-            CompoundTag tag = listNBT.getCompound(i);
+            CompoundNBT tag = listNBT.getCompound(i);
             ResourceLocation enchantmentResource = ResourceLocation.tryParse(tag.getString("id"));
 
             if (enchantmentResource != null)

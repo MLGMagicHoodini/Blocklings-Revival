@@ -5,11 +5,12 @@ import com.willr27.blocklings.entity.blockling.goal.config.iteminfo.ItemInfo;
 import com.willr27.blocklings.entity.blockling.task.BlocklingTasks;
 import com.willr27.blocklings.entity.blockling.task.config.ItemConfigurationTypeProperty;
 import com.willr27.blocklings.inventory.AbstractInventory;
+import com.willr27.blocklings.inventory.BlocklingItemHandler;
+import com.willr27.blocklings.inventory.EquipmentInventory;
+import net.minecraft.core.Direction;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.core.Direction;
-import com.willr27.blocklings.inventory.BlocklingItemHandler;
 
 import javax.annotation.Nonnull;
 import java.util.UUID;
@@ -32,20 +33,20 @@ public class BlocklingDepositContainerGoal extends BlocklingContainerGoal
     @Override
     protected boolean tryTransferItems(@Nonnull ContainerInfo containerInfo, boolean simulate)
     {
-        BlockEntity BlockEntity = containerAsBlockEntity(containerInfo);
+        BlockEntity blockEntity = containerAsBlockEntity(containerInfo);
 
-        if (BlockEntity == null)
+        if (blockEntity == null)
         {
             return false;
         }
 
         AbstractInventory inv = blockling.getEquipment();
         int remainingDepositAmount = getTransferAmount();
+        // While transferring (or finishing), enforce stop thresholds; otherwise start thresholds.
+        boolean useStopThresholds = isEnforcingStopThresholds();
 
-        // Loop through each item and try to take it from the blockling's inventory.
         for (ItemInfo itemInfo : itemInfoSet)
         {
-            // If we have deposited all the items we can then stop.
             if (remainingDepositAmount <= 0)
             {
                 break;
@@ -53,26 +54,18 @@ public class BlocklingDepositContainerGoal extends BlocklingContainerGoal
 
             Item item = itemInfo.getItem();
 
-            // Skip any items that are not in the container's inventory.
-            if (itemConfigurationTypeProperty.getType() == ItemConfigurationTypeProperty.Type.SIMPLE && !hasItemInInventory(item))
+            if (!hasItemInInventory(item))
             {
                 continue;
             }
 
-            int startInventoryAmount = itemInfo.getStartInventoryAmount() != null ? itemInfo.getStartInventoryAmount() : 0;
-            int startContainerAmount = itemInfo.getStartContainerAmount() != null ? itemInfo.getStartContainerAmount() : Integer.MAX_VALUE;
-            int stopInventoryAmount = itemInfo.getStopInventoryAmount() != null ? itemInfo.getStopInventoryAmount() : 0;
-            int stopContainerAmount = itemInfo.getStopContainerAmount() != null ? itemInfo.getStopContainerAmount() : Integer.MAX_VALUE;
-
-            // Loop through each selected side of the container (in priority order) and try to deposit the item in it.
             for (Direction direction : containerInfo.getSides())
             {
-                BlocklingItemHandler itemHandler = getItemHandler(BlockEntity, direction);
+                BlocklingItemHandler itemHandler = getItemHandler(blockEntity, direction);
 
-                // Something has probably gone wrong if the item handler is null, but we have to check.
                 if (itemHandler == null)
                 {
-                    return false;
+                    continue;
                 }
 
                 ItemStack remainingStack = new ItemStack(item, remainingDepositAmount);
@@ -85,81 +78,129 @@ public class BlocklingDepositContainerGoal extends BlocklingContainerGoal
                     remainingStack = remainderStack;
                 }
 
-                // If there is no space in the container for the item then continue to the next direction.
                 if (amountOfSpaceInContainerForItem == 0)
                 {
                     continue;
                 }
 
-                // If we are using the advanced configuration check the item's inventory and container amounts.
+                int amountAllowed = remainingDepositAmount;
+
                 if (itemConfigurationTypeProperty.getType() == ItemConfigurationTypeProperty.Type.ADVANCED)
                 {
-                    int inventoryAmount = countItemsInInventory(item);
-                    int containerAmount = countItemsInContainer(itemHandler, item);
+                    amountAllowed = getAdvancedDepositAmount(itemInfo, itemHandler, item, useStopThresholds);
 
-                    // If the task is currently executing then we want to check if the stop amounts have been reached.
-                    if (getState() == State.ACTIVE)
+                    if (amountAllowed <= 0)
                     {
-                        if (inventoryAmount <= stopInventoryAmount || containerAmount >= stopContainerAmount)
-                        {
-                            continue;
-                        }
+                        continue;
                     }
-                    // If the task is not currently executing then we want to check if the start amounts have been reached.
-                    else
-                    {
-                        if (inventoryAmount <= startInventoryAmount || containerAmount >= startContainerAmount)
-                        {
-                            continue;
-                        }
-                    }
-
-                    // Make sure we don't deposit more items than the user has configured.
-                    remainingDepositAmount = Math.min(remainingDepositAmount, Math.min(inventoryAmount - stopInventoryAmount, stopContainerAmount - containerAmount));
                 }
 
-                // If we have deposited all the items we can then stop.
-                if (remainingDepositAmount <= 0)
+                amountAllowed = Math.min(amountAllowed, amountOfSpaceInContainerForItem);
+
+                if (amountAllowed <= 0)
                 {
-                    break;
+                    continue;
                 }
 
-                // Only try to deposit what is needed and the container has room for.
-                int amountToDeposit = Math.min(remainingDepositAmount, amountOfSpaceInContainerForItem);
-                ItemStack stackLeftToDeposit = new ItemStack(item, amountToDeposit);
+                ItemStack stackLeftToDeposit = new ItemStack(item, amountAllowed);
 
-                // Try take as many items as possible from the blockling's inventory.
-                ItemStack stackDeposited = inv.takeItem(stackLeftToDeposit, simulate);
+                ItemStack stackDeposited = inv.takeItem(
+                        stackLeftToDeposit,
+                        EquipmentInventory.TOOL_OFF_HAND + 1,
+                        inv.getContainerSize() - 1,
+                        simulate);
 
-                // Calculate the amount of items we have taken.
                 int amountTaken = stackDeposited.getCount();
 
-                // If we have not taken any items then continue to the next direction.
                 if (amountTaken == 0)
                 {
                     continue;
                 }
 
-                // If we are not simulating then add the items to the container's inventory.
                 if (!simulate)
                 {
-                    for (int i = 0; i < itemHandler.getSlots() && !stackDeposited.isEmpty(); i++)
+                    ItemStack toInsert = stackDeposited.copy();
+                    for (int i = 0; i < itemHandler.getSlots() && !toInsert.isEmpty(); i++)
                     {
-                        stackDeposited = itemHandler.insertItem(i, stackDeposited, false);
+                        toInsert = itemHandler.insertItem(i, toInsert, false);
                     }
+
+                    int inserted = amountTaken - toInsert.getCount();
+
+                    if (!toInsert.isEmpty())
+                    {
+                        ItemStack leftover = inv.addItem(toInsert);
+                        if (!leftover.isEmpty())
+                        {
+                            blockling.dropItemStack(leftover);
+                        }
+                    }
+
+                    remainingDepositAmount -= inserted;
                 }
                 else
                 {
-                    // If we are here then we are simulating and have deposited an item so can return true.
                     return true;
                 }
-
-                // Update the amount of items we have taken.
-                remainingDepositAmount -= amountTaken;
             }
         }
 
         return remainingDepositAmount < getTransferAmount();
+    }
+
+    /**
+     * @return how many of this item may be deposited under advanced start/stop rules, or 0 if none.
+     */
+    private int getAdvancedDepositAmount(@Nonnull ItemInfo itemInfo, @Nonnull BlocklingItemHandler itemHandler, @Nonnull Item item, boolean useStopThresholds)
+    {
+        int inventoryAmount = countItemsInInventory(item);
+        int containerAmount = countItemsInContainer(itemHandler, item);
+
+        Integer startInv = itemInfo.getStartInventoryAmount();
+        Integer stopInv = itemInfo.getStopInventoryAmount();
+        Integer startCont = itemInfo.getStartContainerAmount();
+        Integer stopCont = itemInfo.getStopContainerAmount();
+
+        if (useStopThresholds)
+        {
+            // Stop when inventory is at/below keep-amount, or container reached fill limit.
+            if (stopInv != null && inventoryAmount <= stopInv)
+            {
+                return 0;
+            }
+            if (stopCont != null && containerAmount >= stopCont)
+            {
+                return 0;
+            }
+
+            int byInv = stopInv != null ? inventoryAmount - stopInv : inventoryAmount;
+            int byCont = stopCont != null ? stopCont - containerAmount : Integer.MAX_VALUE;
+            return Math.max(0, Math.min(byInv, byCont));
+        }
+
+        // Start only when inventory is above start threshold and container is below start fill.
+        if (startInv != null && inventoryAmount <= startInv)
+        {
+            return 0;
+        }
+        if (startCont != null && containerAmount >= startCont)
+        {
+            return 0;
+        }
+
+        // First transfer of a trip: also respect stop so we never open just to no-op.
+        if (stopInv != null && inventoryAmount <= stopInv)
+        {
+            return 0;
+        }
+        if (stopCont != null && containerAmount >= stopCont)
+        {
+            return 0;
+        }
+
+        int byInv = stopInv != null ? inventoryAmount - stopInv : inventoryAmount;
+        int byCont = stopCont != null ? stopCont - containerAmount : Integer.MAX_VALUE;
+        return Math.max(0, Math.min(byInv, byCont));
     }
 
     @Override
@@ -167,10 +208,31 @@ public class BlocklingDepositContainerGoal extends BlocklingContainerGoal
     {
         for (ItemInfo itemInfo : itemInfoSet)
         {
-            if (hasItemInInventory(itemInfo.getItem()))
+            Item item = itemInfo.getItem();
+            int inventoryAmount = countItemsInInventory(item);
+
+            if (inventoryAmount <= 0)
             {
-                return true;
+                continue;
             }
+
+            if (itemConfigurationTypeProperty.getType() == ItemConfigurationTypeProperty.Type.ADVANCED)
+            {
+                Integer startInv = itemInfo.getStartInventoryAmount();
+                Integer stopInv = itemInfo.getStopInventoryAmount();
+
+                // Need something above the keep-amount, and enough to trigger a new trip.
+                if (stopInv != null && inventoryAmount <= stopInv)
+                {
+                    continue;
+                }
+                if (startInv != null && inventoryAmount <= startInv)
+                {
+                    continue;
+                }
+            }
+
+            return true;
         }
 
         return false;

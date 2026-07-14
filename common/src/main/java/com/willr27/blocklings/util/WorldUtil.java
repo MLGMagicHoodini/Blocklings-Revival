@@ -92,10 +92,31 @@ public class WorldUtil
 
         /**
          * @return true if the tree is a valid tree (is the leaves to logs ratio valid).
+         * Large trees truncated by {@code maxTreeLogsSize} may under-count canopy leaves;
+         * if we already found a substantial trunk + any natural leaves, accept it.
+         * Small leftover trunks (dark oak 2x2 stumps after the canopy is gone) have no leaves
+         * left — still treat them as choppable.
          */
         public boolean isValid(float minLeavesToLogsRatio)
         {
-            return logs.size() != 0 && ((float) leaves.size() / logs.size()) >= minLeavesToLogsRatio;
+            if (logs.isEmpty())
+            {
+                return false;
+            }
+
+            // Stump / leftover trunk after leaves decayed or were blown — finish the job.
+            if (logs.size() <= 12)
+            {
+                return true;
+            }
+
+            if (((float) leaves.size() / logs.size()) >= minLeavesToLogsRatio)
+            {
+                return true;
+            }
+
+            // Truncated mega/2x2 trees: trunk filled the log cap before reaching enough canopy.
+            return logs.size() >= 24 && !leaves.isEmpty();
         }
     }
 }

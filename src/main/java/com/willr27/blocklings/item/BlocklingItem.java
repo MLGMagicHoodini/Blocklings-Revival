@@ -11,16 +11,7 @@ import com.willr27.blocklings.util.BlocklingsResourceLocation;
 import com.willr27.blocklings.util.BlocklingsTranslationTextComponent;
 import com.willr27.blocklings.util.ObjectUtil;
 import com.willr27.blocklings.util.Version;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.entity.MobSpawnType;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.fml.DeferredWorkQueue;
-/*import net.minecraft.block.BlockState;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.item.*;
@@ -33,7 +24,7 @@ import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.IServerWorld;
 import net.minecraft.world.World;
-import net.minecraftforge.fml.DeferredWorkQueue;*/
+import net.minecraftforge.fml.DeferredWorkQueue;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -66,9 +57,9 @@ public class BlocklingItem extends Item
         ItemStack stack = new ItemStack(BlocklingsItems.BLOCKLING.get(), 1);
         stack.setHoverName(new StringTextComponent(TextFormatting.GOLD + blockling.getCustomName().getString()));
 
-        CompoundTag stackTag = stack.getOrCreateTag();
+        CompoundNBT stackTag = stack.getOrCreateTag();
 
-        CompoundTag entityTag = new CompoundTag();
+        CompoundNBT entityTag = new CompoundNBT();
         blockling.addAdditionalSaveData(entityTag);
         stackTag.put("entity", entityTag);
 
@@ -88,31 +79,31 @@ public class BlocklingItem extends Item
     @Override
     public ActionResultType useOn(ItemUseContext context)
     {
-        Level level = context.getLevel();
+        World world = context.getLevel();
 
         if (!world.isClientSide)
         {
             ItemStack stack = context.getItemInHand();
             BlockPos blockpos = context.getClickedPos();
             Direction direction = context.getClickedFace();
-            BlockState blockstate = level.getBlockState(blockpos);
+            BlockState blockstate = world.getBlockState(blockpos);
 
-            if (!blockstate.getCollisionShape(level, blockpos).isEmpty())
+            if (!blockstate.getCollisionShape(world, blockpos).isEmpty())
             {
                 blockpos = blockpos.relative(direction);
             }
 
-            BlocklingEntity blockling = new BlocklingEntity(BlocklingsEntityTypes.BLOCKLING.get(), level);
+            BlocklingEntity blockling = new BlocklingEntity(BlocklingsEntityTypes.BLOCKLING.get(), world);
 
-            CompoundTag stackTag = stack.getTag();
-            CompoundTag entityTag = null;
+            CompoundNBT stackTag = stack.getTag();
+            CompoundNBT entityTag = null;
 
             if (stackTag != null && stackTag.contains("entity"))
             {
                 entityTag = stackTag.getCompound("entity");
             }
 
-            blockling.finalizeSpawn((IServerWorld) level, level.getCurrentDifficultyAt(blockpos), MobSpawnType.SPAWN_EGG, null, entityTag);
+            blockling.finalizeSpawn((IServerWorld) world, world.getCurrentDifficultyAt(blockpos), SpawnReason.SPAWN_EGG, null, entityTag);
 
             if (entityTag == null || !entityTag.contains("blockling"))
             {
@@ -136,7 +127,7 @@ public class BlocklingItem extends Item
                 }
             }
 
-            level.addFreshEntity(blockling);
+            world.addFreshEntity(blockling);
 
             if (!context.getPlayer().abilities.instabuild)
             {
@@ -150,7 +141,7 @@ public class BlocklingItem extends Item
     @Override
     public void appendHoverText(@Nonnull ItemStack stack, @Nullable World world, @Nonnull List<ITextComponent> tooltip, @Nonnull ITooltipFlag flag)
     {
-        CompoundTag stackTag = stack.getTag();
+        CompoundNBT stackTag = stack.getTag();
 
         if (stackTag != null && stackTag.contains("entity"))
         {
@@ -172,15 +163,15 @@ public class BlocklingItem extends Item
         {
             ItemModelsProperties.register(BlocklingsItems.BLOCKLING.get(), new BlocklingsResourceLocation("type"), (stack, world, entity) ->
             {
-                CompoundTag stackTag = stack.getTag();
+                CompoundNBT stackTag = stack.getTag();
 
                 if (stackTag != null)
                 {
-                    CompoundTag entityTag = stackTag.getCompound("entity");
+                    CompoundNBT entityTag = stackTag.getCompound("entity");
 
                     if (entityTag != null)
                     {
-                        CompoundTag blocklingTag = entityTag.getCompound("blockling");
+                        CompoundNBT blocklingTag = entityTag.getCompound("blockling");
 
                         if (blocklingTag != null)
                         {

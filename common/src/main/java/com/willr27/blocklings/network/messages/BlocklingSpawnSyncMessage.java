@@ -2,7 +2,6 @@ package com.willr27.blocklings.network.messages;
 
 import com.willr27.blocklings.entity.blockling.BlocklingEntity;
 import com.willr27.blocklings.network.Message;
-import com.willr27.blocklings.util.RegistryUtil;
 import io.netty.buffer.Unpooled;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -28,7 +27,8 @@ public class BlocklingSpawnSyncMessage extends Message
     {
         this.blocklingEntityId = blockling.getId();
 
-        RegistryFriendlyByteBuf buffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), RegistryUtil.registryAccess());
+        RegistryFriendlyByteBuf buffer = new RegistryFriendlyByteBuf(
+                Unpooled.buffer(), blockling.level().registryAccess());
         try
         {
             blockling.writeSpawnData(buffer);
@@ -75,7 +75,8 @@ public class BlocklingSpawnSyncMessage extends Message
             return;
         }
 
-        RegistryFriendlyByteBuf buffer = new RegistryFriendlyByteBuf(Unpooled.wrappedBuffer(spawnData), RegistryUtil.registryAccess());
+        RegistryFriendlyByteBuf buffer = new RegistryFriendlyByteBuf(
+                Unpooled.wrappedBuffer(spawnData), player.level().registryAccess());
         try
         {
             blockling.readSpawnData(buffer);

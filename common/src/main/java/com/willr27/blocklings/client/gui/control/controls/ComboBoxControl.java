@@ -218,6 +218,17 @@ public class ComboBoxControl extends StackPanel
      */
     public void setSelectedItem(@Nonnull Item item)
     {
+        setSelectedItem(item, true);
+    }
+
+    /**
+     * Sets the currently selected item.
+     *
+     * @param item the item to select.
+     * @param postEvent whether to fire {@link SelectionChangedEvent}.
+     */
+    public void setSelectedItem(@Nonnull Item item, boolean postEvent)
+    {
         ItemControl itemControl = getItemControl(item);
 
         if (itemControl == null)
@@ -225,7 +236,7 @@ public class ComboBoxControl extends StackPanel
             addItem(item);
         }
 
-        setSelectedItemControl(getItemControl(item), true);
+        setSelectedItemControl(getItemControl(item), postEvent);
     }
 
     /**

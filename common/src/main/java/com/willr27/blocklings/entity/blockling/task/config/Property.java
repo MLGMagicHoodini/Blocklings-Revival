@@ -7,6 +7,7 @@ import com.willr27.blocklings.entity.blockling.task.Task;
 import com.willr27.blocklings.network.BlocklingMessage;
 import com.willr27.blocklings.util.IReadWriteNBT;
 import com.willr27.blocklings.util.Version;
+import io.netty.buffer.Unpooled;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
@@ -16,7 +17,6 @@ import com.willr27.blocklings.loader.OnlyIn;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -149,10 +149,10 @@ public abstract class Property implements IReadWriteNBT
     public static class TaskPropertyMessage extends BlocklingMessage<TaskPropertyMessage>
     {
         /**
-         * The remaining buffer used to pass to the property to decode.
+         * Copied property payload — must not retain the network buffer (released after decode).
          */
         @Nullable
-        private FriendlyByteBuf buf;
+        private byte[] propertyData;
 
         /**
          * The property (could be null on the receiving end if the client and server are no synced).
@@ -207,7 +207,9 @@ public abstract class Property implements IReadWriteNBT
             taskId = buf.readUUID();
             propertyIndex = buf.readInt();
 
-            this.buf = buf;
+            // Copy remaining bytes now — MessageRegistry releases the network buffer before handle().
+            propertyData = new byte[buf.readableBytes()];
+            buf.readBytes(propertyData);
         }
 
         @Override
@@ -215,10 +217,18 @@ public abstract class Property implements IReadWriteNBT
         {
             Task task = blockling.getTasks().getTask(taskId);
 
-            if (task != null && task.isConfigured())
+            if (task != null && task.isConfigured() && propertyData != null)
             {
                 property = task.getGoal().properties.get(propertyIndex);
-                property.decode(Objects.requireNonNull(buf));
+                FriendlyByteBuf propertyBuf = new FriendlyByteBuf(Unpooled.wrappedBuffer(propertyData));
+                try
+                {
+                    property.decode(propertyBuf);
+                }
+                finally
+                {
+                    propertyBuf.release();
+                }
             }
         }
     }

@@ -48,6 +48,10 @@ public final class NeoForgeConfigBridge
         spawn.nearbyCap = asSupplier(neo.nearbyCap);
         spawn.nearbyRadius = asSupplier(neo.nearbyRadius);
         spawn.preventDuplicateNearbyType = asSupplier(neo.preventDuplicateNearbyType);
+        spawn.starterSpawnEnabled = asSupplier(neo.starterSpawnEnabled);
+        spawn.starterSpawnCount = asSupplier(neo.starterSpawnCount);
+        spawn.starterSpawnRadius = asSupplier(neo.starterSpawnRadius);
+        spawn.starterSpawnDelayTicks = asSupplier(neo.starterSpawnDelayTicks);
 
         for (Map.Entry<String, NeoForgeBlocklingsConfig.Common.TypeSpawnConfig> entry : neo.typeSpawns.entrySet())
         {

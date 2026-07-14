@@ -69,6 +69,16 @@ public class BlocklingsContainerScreen<T extends AbstractContainerMenu> extends 
     {
     }
 
+    /**
+     * Skip vanilla's transparent overlay here. Tabbed screens already dim the world via
+     * their own background control; drawing the overlay in {@link #render} after
+     * {@code screenControl} would tint the equipment panel dark.
+     */
+    @Override
+    public void renderBackground(@Nonnull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks)
+    {
+    }
+
     @Override
     public void render(@Nonnull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks)
     {

@@ -4,6 +4,7 @@ import com.google.common.collect.Iterables;
 import com.willr27.blocklings.Blocklings;
 import com.willr27.blocklings.loader.BlocklingsRegistries;
 import com.willr27.blocklings.client.gui.BlocklingGuiHandler;
+import com.willr27.blocklings.config.BlocklingSpawnConfig;
 import com.willr27.blocklings.config.BlocklingsConfig;
 import com.willr27.blocklings.entity.blockling.ability.BlocklingAbilityController;
 import com.willr27.blocklings.entity.blockling.action.BlocklingActions;
@@ -35,7 +36,6 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -47,8 +47,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.core.particles.ParticleTypes;
@@ -62,9 +61,6 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.network.chat.Component;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.level.ServerLevelAccessor;
@@ -92,22 +88,30 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
             SynchedEntityData.defineId(BlocklingEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> DATA_TYPE =
             SynchedEntityData.defineId(BlocklingEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Boolean> DATA_HAS_TRANSFORMED =
+            SynchedEntityData.defineId(BlocklingEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Integer> DATA_VARIANT =
             SynchedEntityData.defineId(BlocklingEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Float> DATA_SCALE =
             SynchedEntityData.defineId(BlocklingEntity.class, EntityDataSerializers.FLOAT);
 
     /**
-     * The blockling type the blockling spawned as.
+     * The type the blockling originally spawned as. Permanent after spawn — never overwritten by upgrades.
      */
     @Nonnull
     private BlocklingType naturalBlocklingType = BlocklingType.GRASS;
 
     /**
-     * The blockling type the blockling has been changed to.
+     * The current primary (upgraded) type. Mutable via Shift + food upgrades.
      */
     @Nonnull
     private BlocklingType blocklingType = BlocklingType.GRASS;
+
+    /**
+     * True once the player has upgraded primary type at least once (persisted so Primary Type
+     * still shows if later set back to the natural type).
+     */
+    private boolean hasTransformed = false;
 
     /**
      * The variant used to determine how a blockling blends with its original blockling type.
@@ -242,6 +246,20 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
         equipmentInv.updateToolAttributes();
 
         setHealth(getMaxHealth());
+
+        // Small blocklings otherwise treat grass / plants as awkward path nodes and freeze.
+        setPathfindingMalus(net.minecraft.world.level.pathfinder.PathType.DANGER_OTHER, 0.0f);
+        setPathfindingMalus(net.minecraft.world.level.pathfinder.PathType.DAMAGE_OTHER, 0.0f);
+        setPathfindingMalus(net.minecraft.world.level.pathfinder.PathType.DAMAGE_CAUTIOUS, 0.0f);
+    }
+
+    @Override
+    protected net.minecraft.world.entity.ai.navigation.PathNavigation createNavigation(@Nonnull Level level)
+    {
+        BlocklingGroundPathNavigation navigation = new BlocklingGroundPathNavigation(this, level);
+        navigation.setCanFloat(true);
+        navigation.setCanOpenDoors(false);
+        return navigation;
     }
 
     @Override
@@ -250,6 +268,7 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
         super.defineSynchedData(builder);
         builder.define(DATA_NATURAL_TYPE, 0);
         builder.define(DATA_TYPE, 0);
+        builder.define(DATA_HAS_TRANSFORMED, false);
         builder.define(DATA_VARIANT, 0);
         builder.define(DATA_SCALE, 1.0f);
     }
@@ -271,6 +290,10 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
                 stats.updateTypeBonuses(false);
             }
         }
+        else if (DATA_HAS_TRANSFORMED.equals(key))
+        {
+            hasTransformed = entityData.get(DATA_HAS_TRANSFORMED);
+        }
         else if (DATA_VARIANT.equals(key))
         {
             blocklingTypeVariant = entityData.get(DATA_VARIANT);
@@ -288,6 +311,7 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
         {
             entityData.set(DATA_NATURAL_TYPE, Math.max(0, BlocklingType.TYPES.indexOf(naturalBlocklingType)));
             entityData.set(DATA_TYPE, Math.max(0, BlocklingType.TYPES.indexOf(blocklingType)));
+            entityData.set(DATA_HAS_TRANSFORMED, hasTransformed);
             entityData.set(DATA_VARIANT, blocklingTypeVariant);
             entityData.set(DATA_SCALE, scale > 0.0f ? scale : 1.0f);
         }
@@ -311,7 +335,10 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
      */
     public static AttributeSupplier.Builder createAttributes()
     {
-        return Mob.createMobAttributes().add(Attributes.ATTACK_DAMAGE, 0.0).add(Attributes.ATTACK_SPEED, 0.0);
+        return Mob.createMobAttributes()
+                .add(Attributes.ATTACK_DAMAGE, 0.0)
+                .add(Attributes.ATTACK_SPEED, 0.0)
+                .add(Attributes.STEP_HEIGHT, 1.0);
     }
 
     @Override
@@ -366,8 +393,12 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
     {
         blocklingTag.putString("original_type", naturalBlocklingType.key);
         blocklingTag.putString("type", blocklingType.key);
+        blocklingTag.putBoolean("has_transformed", hasTransformed);
         blocklingTag.putInt("variant", blocklingTypeVariant);
         blocklingTag.putFloat("scale", scale);
+        // Persist current HP in the blockling tag so Packling / item spawn can restore it
+        // after max-health attributes are reapplied (vanilla Health can be overwritten).
+        blocklingTag.putFloat("current_health", getHealth());
 
         blocklingTag.put("equipment_inv", equipmentInv.writeToNBT());
         blocklingTag.put("attributes", stats.writeToNBT());
@@ -397,6 +428,15 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
         blocklingTypeVariant = blocklingTag.getInt("variant");
         naturalBlocklingType = BlocklingType.find(blocklingTag.getString("original_type"), tagVersion);
         blocklingType = BlocklingType.find(blocklingTag.getString("type"), tagVersion);
+        // Backward compat: old saves without has_transformed → transformed only if types differ.
+        if (blocklingTag.contains("has_transformed"))
+        {
+            hasTransformed = blocklingTag.getBoolean("has_transformed");
+        }
+        else
+        {
+            hasTransformed = naturalBlocklingType != blocklingType;
+        }
         setBlocklingScale(blocklingTag.getFloat("scale"), false);
         if (scale <= 0.0f && !level().isClientSide())
         {
@@ -405,6 +445,10 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
 
         // Health can be overwritten when loading max health modifiers.
         float health = getHealth();
+        if (blocklingTag.contains("current_health"))
+        {
+            health = blocklingTag.getFloat("current_health");
+        }
 
         CompoundTag equipmentInvTag = blocklingTag.getCompound("equipment_inv");
 
@@ -434,6 +478,9 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
             skills.readFromNBT(skillsTag, tagVersion);
         }
 
+        // Tasks load before skills, so re-apply skill-gated task properties now.
+        tasks.refreshSkillGatedProperties();
+
         abilityController.readFromNBT(blocklingTag);
 
         equipmentInv.updateToolAttributes();
@@ -449,6 +496,7 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
         syncAppearanceData();
         buf.writeInt(BlocklingType.TYPES.indexOf(naturalBlocklingType));
         buf.writeInt(BlocklingType.TYPES.indexOf(blocklingType));
+        buf.writeBoolean(hasTransformed);
         buf.writeInt(blocklingTypeVariant);
         buf.writeFloat(scale);
 
@@ -462,6 +510,7 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
     {
         naturalBlocklingType = BlocklingType.getTypeByIndex(buf.readInt());
         blocklingType = BlocklingType.getTypeByIndex(buf.readInt());
+        hasTransformed = buf.readBoolean();
         blocklingTypeVariant = buf.readInt();
         setBlocklingScale(buf.readFloat(), false);
         if (scale <= 0.0f && !level().isClientSide())
@@ -475,6 +524,9 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
         stats.decode(buf);
         tasks.decode(buf);
         skills.decode(buf);
+
+        // Tasks decode before skills — refresh skill-gated properties for the client.
+        tasks.refreshSkillGatedProperties();
 
         equipmentInv.updateToolAttributes();
         stats.updateTypeBonuses(false);
@@ -509,6 +561,8 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
 
         // Tick the tasks just after the goal and target selectors have ticked.
         tasks.tick();
+
+        com.willr27.blocklings.command.BlocklingTaskLogger.snapshot(this);
     }
 
     /**
@@ -589,6 +643,7 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
         float damage = 0.0f;
         float knockback = (float) this.getAttributeValue(Attributes.ATTACK_KNOCKBACK);
         int fireAspect = 0;
+        ItemStack postAttackWeapon = ItemStack.EMPTY;
 
         if (target instanceof LivingEntity)
         {
@@ -600,14 +655,17 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
                     {
                         tinkersDamage += stats.mainHandAttackDamage.getValue(); // This won't take into account Tinkers' modifiers but is good enough.
                         hasHurt = true;
+                        postAttackWeapon = mainStack;
                     }
                 }
                 else
                 {
-                    damage += stats.mainHandAttackDamage.getValue();
-                    damage += ToolUtil.getToolEnchantmentDamage(mainStack, (LivingEntity) target);
-                    knockback += ToolUtil.getToolKnockbackLevel(mainStack);
+                    // Live tool damage so weapon tier matters (#49). Type/level/skills come from vanilla attr below.
+                    damage += ToolUtil.getDefaultToolBaseDamage(mainStack);
+                    damage += ToolUtil.getToolEnchantmentDamage(mainStack, this, (LivingEntity) target);
+                    knockback = ToolUtil.getToolKnockback(mainStack, this, target, knockback);
                     fireAspect += ToolUtil.getToolFireAspectLevel(mainStack);
+                    postAttackWeapon = mainStack;
                 }
             }
 
@@ -619,14 +677,22 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
                     {
                         tinkersDamage += stats.offHandAttackDamage.getValue(); // This won't take into account Tinkers' modifiers but is good enough.
                         hasHurt = true;
+                        if (postAttackWeapon.isEmpty())
+                        {
+                            postAttackWeapon = offStack;
+                        }
                     }
                 }
                 else
                 {
-                    damage += stats.offHandAttackDamage.getValue();
-                    damage += ToolUtil.getToolEnchantmentDamage(offStack, (LivingEntity) target);
-                    knockback += ToolUtil.getToolKnockbackLevel(offStack);
+                    damage += ToolUtil.getDefaultToolBaseDamage(offStack);
+                    damage += ToolUtil.getToolEnchantmentDamage(offStack, this, (LivingEntity) target);
+                    knockback = ToolUtil.getToolKnockback(offStack, this, target, knockback);
                     fireAspect += ToolUtil.getToolFireAspectLevel(offStack);
+                    if (postAttackWeapon.isEmpty())
+                    {
+                        postAttackWeapon = offStack;
+                    }
                 }
             }
         }
@@ -652,6 +718,9 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
 
         damage += (float) getAttributeValue(Attributes.ATTACK_DAMAGE);
 
+        // Skill modifiers (Sharpness/Berserker/Wreckless) are already on the vanilla attribute.
+        // Do not also add full mainHandAttackDamage (which double-counted type/level/skills).
+
         if (damage > 0)
         {
             int invulnerableTime = target.invulnerableTime;
@@ -663,6 +732,12 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
         if (hasHurt)
         {
             stats.combatXp.incrementValue((int) (damage + tinkersDamage) + 1);
+
+            // Apotheosis / datapack / vanilla post-hit enchantment effects.
+            if (!postAttackWeapon.isEmpty())
+            {
+                EnchantmentCompat.doPostAttackEffects(this, target, postAttackWeapon);
+            }
 
             if (knockback > 0.0f)
             {
@@ -737,9 +812,7 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
      */
     private void maybeDisableShield(Player p_233655_1_, ItemStack p_233655_2_, ItemStack p_233655_3_) {
         if (!p_233655_2_.isEmpty() && !p_233655_3_.isEmpty() && p_233655_2_.getItem() instanceof AxeItem && p_233655_3_.getItem() == Items.SHIELD) {
-            float f = 0.25F + (float) EnchantmentHelper.getItemEnchantmentLevel(
-                    level().registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT)
-                            .getOrThrow(Enchantments.EFFICIENCY), getMainHandItem()) * 0.05F;
+            float f = 0.25F + ToolUtil.getToolEfficiencyLevel(getMainHandItem()) * 0.05F;
             if (this.random.nextFloat() < f) {
                 p_233655_1_.getCooldowns().addCooldown(Items.SHIELD, 100);
                 this.level().broadcastEntityEvent(p_233655_1_, (byte)30);
@@ -849,57 +922,50 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
             return primaryTypeResult;
         }
 
+        InteractionResult growResult = tryGrowWithFood(player, stack);
+
+        if (growResult != InteractionResult.PASS)
+        {
+            return growResult;
+        }
+
         if (blocklingType.isFoodForType(item))
         {
-            if (!level().isClientSide())
+            // Client must consume the interaction so the server still receives the packet.
+            if (level().isClientSide())
             {
-                if (!isTame())
+                return InteractionResult.SUCCESS;
+            }
+
+            if (!isTame())
+            {
+                tryTame((ServerPlayer) player, stack);
+
+                if (!player.getAbilities().instabuild)
                 {
-                    tryTame((ServerPlayer) player, stack);
-
-                    if (!player.getAbilities().instabuild)
-                    {
-                        stack.shrink(1);
-                    }
-
-                    return InteractionResult.SUCCESS;
+                    stack.shrink(1);
                 }
-                else
+
+                return InteractionResult.SUCCESS;
+            }
+            else
+            {
+                if (hasPlayerResetCrouchBetweenInteractions && skills.getSkill(GeneralSkills.PACKLING).isBought())
                 {
-                    if (hasPlayerResetCrouchBetweenInteractions && skills.getSkill(GeneralSkills.PACKLING).isBought())
+                    if (player == getOwner())
                     {
-                        if (player == getOwner())
+                        if (player.isCrouching())
                         {
-                            if (player.isCrouching())
+                            ItemStack blocklingStack = BlocklingItem.create(this);
+
+                            if (!player.getInventory().add(blocklingStack))
                             {
-                                ItemStack blocklingStack = BlocklingItem.create(this);
-
-                                if (!player.getInventory().add(blocklingStack))
-                                {
-                                    dropItemStack(blocklingStack);
-                                }
-
-                                BlocklingWhistleItem.onBlocklingDestroyed(this);
-
-                                discard();
-
-                                if (!player.getAbilities().instabuild)
-                                {
-                                    stack.shrink(1);
-                                }
-
-                                return InteractionResult.SUCCESS;
+                                dropItemStack(blocklingStack);
                             }
-                        }
-                    }
 
-                    if (hasPlayerResetCrouchBetweenInteractions && skills.getSkill(GeneralSkills.HEAL).isBought())
-                    {
-                        if (getHealth() < getMaxHealth())
-                        {
-                            heal(random.nextInt(3) + 3);
+                            BlocklingWhistleItem.onBlocklingDestroyed(this);
 
-                            level().broadcastEntityEvent(this, (byte) 7);
+                            discard();
 
                             if (!player.getAbilities().instabuild)
                             {
@@ -908,6 +974,32 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
 
                             return InteractionResult.SUCCESS;
                         }
+                    }
+                }
+
+                if (skills.getSkill(GeneralSkills.HEAL).isBought() && player == getOwner() && !player.isCrouching())
+                {
+                    if (getHealth() < getMaxHealth())
+                    {
+                        float healAmount = 3.0f + random.nextInt(3);
+                        float before = getHealth();
+                        heal(healAmount);
+
+                        // Guarantee a visible heal even if something capped the vanilla heal call.
+                        if (getHealth() <= before)
+                        {
+                            setHealth(Math.min(getMaxHealth(), before + healAmount));
+                        }
+
+                        hasPlayerResetCrouchBetweenInteractions = false;
+                        level().broadcastEntityEvent(this, (byte) 7);
+
+                        if (!player.getAbilities().instabuild)
+                        {
+                            stack.shrink(1);
+                        }
+
+                        return InteractionResult.SUCCESS;
                     }
                 }
             }
@@ -970,7 +1062,8 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
     }
 
     /**
-     * Attempts to change the blockling's type using food while the owner is crouching.
+     * Upgrades the primary type using food while crouching (Shift).
+     * Natural type is never changed — only primary type updates on success.
      */
     @Nonnull
     private InteractionResult tryEvolveWithFood(@Nonnull Player player, @Nonnull ItemStack stack)
@@ -989,6 +1082,12 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
             return InteractionResult.PASS;
         }
 
+        // Already this primary type — let grow / other handlers use same-type food.
+        if (newType == blocklingType)
+        {
+            return InteractionResult.PASS;
+        }
+
         if (level().isClientSide())
         {
             return InteractionResult.SUCCESS;
@@ -996,17 +1095,10 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
 
         hasPlayerResetCrouchBetweenInteractions = false;
 
-        BlocklingType previousNatural = naturalBlocklingType;
-
-        if (random.nextInt(4) == 0)
+        if (random.nextDouble() < BlocklingsConfig.COMMON.evolveChance())
         {
-            setNaturalBlocklingType(newType);
-
-            if (blocklingType == previousNatural)
-            {
-                setBlocklingType(newType);
-            }
-
+            // Keep natural type permanent; upgrade primary only.
+            setBlocklingType(newType);
             level().broadcastEntityEvent(this, (byte) 7);
         }
         else
@@ -1023,23 +1115,53 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
     }
 
     /**
-     * Attempts to change the blockling's primary type using food (without crouching).
+     * Primary type change without Shift is disabled (#50).
+     * Accidental right-clicks with dirt/blocks while building must not change type.
+     * Intentional upgrade: crouch (Shift) + food → {@link #tryEvolveWithFood}.
      */
     @Nonnull
     private InteractionResult tryChangePrimaryTypeWithFood(@Nonnull Player player, @Nonnull ItemStack stack)
     {
+        return InteractionResult.PASS;
+    }
+
+    /**
+     * Feeds the blockling its own type food to grow toward full size (scale 1.0).
+     * Natural spawns start at 0.45–0.95; each feed increases scale until max.
+     */
+    @Nonnull
+    private InteractionResult tryGrowWithFood(@Nonnull Player player, @Nonnull ItemStack stack)
+    {
         Item item = stack.getItem();
 
-        if (!isTame() || player != getOwner() || player.isCrouching() || !BlocklingType.isFood(item))
+        if (!isTame() || player != getOwner() || player.isCrouching())
         {
             return InteractionResult.PASS;
         }
 
-        BlocklingType newType = BlocklingType.findTypeForFood(item);
-
-        if (newType == null || newType == blocklingType)
+        if (!blocklingType.isFoodForType(item) || ItemUtil.isFlower(item))
         {
             return InteractionResult.PASS;
+        }
+
+        // Only grow with this type's material food (dirt for dirt, etc.), not flowers.
+        BlocklingType foodType = BlocklingType.findTypeForFood(item);
+        if (foodType == null || foodType != blocklingType)
+        {
+            return InteractionResult.PASS;
+        }
+
+        float current = getBlocklingScale();
+        if (current >= 0.999f)
+        {
+            // Already full size — still acknowledge the click with fail particles.
+            if (level().isClientSide())
+            {
+                return InteractionResult.SUCCESS;
+            }
+
+            level().broadcastEntityEvent(this, (byte) 6);
+            return InteractionResult.SUCCESS;
         }
 
         if (level().isClientSide())
@@ -1049,15 +1171,9 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
 
         hasPlayerResetCrouchBetweenInteractions = false;
 
-        if (random.nextInt(4) == 0)
-        {
-            setBlocklingType(newType);
-            level().broadcastEntityEvent(this, (byte) 7);
-        }
-        else
-        {
-            level().broadcastEntityEvent(this, (byte) 6);
-        }
+        float grown = Math.min(1.0f, current + 0.08f + random.nextFloat() * 0.04f);
+        setBlocklingScale(grown, true);
+        level().broadcastEntityEvent(this, (byte) 7);
 
         if (!player.getAbilities().instabuild)
         {
@@ -1250,21 +1366,26 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
     public boolean chooseSpawnTypeForLocation(@Nonnull net.minecraft.world.level.LevelAccessor world, @Nonnull MobSpawnType reason)
     {
         List<BlocklingType> candidates = new ArrayList<>();
+        List<Integer> weights = new ArrayList<>();
         int rolledOut = 0;
         int predicateFailed = 0;
+        BlocklingSpawnConfig spawnConfig = BlocklingsConfig.COMMON.spawn;
+        var biome = world.getBiome(blockPosition());
 
         for (BlocklingType type : BlocklingType.TYPES)
         {
-            if (reason == MobSpawnType.NATURAL || reason == MobSpawnType.CHUNK_GENERATION)
+            BlocklingSpawnConfig.TypeConfig typeConfig = spawnConfig.forType(type);
+            if (!typeConfig.isEnabled())
             {
-                if (random.nextInt(type.spawnRateReduction) != 0)
-                {
-                    if (!(type == BlocklingType.GRASS && isGrassPreferredBiome(world) && random.nextInt(100) < 5))
-                    {
-                        rolledOut++;
-                        continue;
-                    }
-                }
+                rolledOut++;
+                continue;
+            }
+
+            int weight = typeConfig.weight();
+            if (weight <= 0)
+            {
+                rolledOut++;
+                continue;
             }
 
             BlocklingType previousNatural = this.naturalBlocklingType;
@@ -1272,15 +1393,7 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
             this.naturalBlocklingType = type;
             this.blocklingType = type;
 
-            boolean matches = true;
-            for (BiPredicate<BlocklingEntity, net.minecraft.world.level.LevelAccessor> predicate : type.spawnPredicates)
-            {
-                if (!predicate.test(this, world))
-                {
-                    matches = false;
-                    break;
-                }
-            }
+            boolean matches = matchesSpawnPredicates(type, typeConfig, world, biome);
 
             this.naturalBlocklingType = previousNatural;
             this.blocklingType = previousPrimary;
@@ -1288,6 +1401,7 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
             if (matches)
             {
                 candidates.add(type);
+                weights.add(weight);
             }
             else
             {
@@ -1301,12 +1415,69 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
             return false;
         }
 
-        BlocklingType chosen = candidates.get(random.nextInt(candidates.size()));
+        BlocklingType chosen = pickWeighted(candidates, weights);
         setNaturalBlocklingType(chosen, false);
         setBlocklingType(chosen, false);
         stats.updateTypeBonuses(false);
         setHealth(getMaxHealth());
         return true;
+    }
+
+    private boolean matchesSpawnPredicates(
+            @Nonnull BlocklingType type,
+            @Nonnull BlocklingSpawnConfig.TypeConfig typeConfig,
+            @Nonnull net.minecraft.world.level.LevelAccessor world,
+            @Nonnull net.minecraft.core.Holder<Biome> biome)
+    {
+        List<? extends String> extraBiomes = typeConfig.biomes();
+        BlocklingSpawnConfig.BiomeMode mode = typeConfig.mode();
+
+        if (mode == BlocklingSpawnConfig.BiomeMode.OVERRIDE && !extraBiomes.isEmpty())
+        {
+            return BlocklingSpawnConfig.matchesBiomeList(biome, extraBiomes);
+        }
+
+        for (BiPredicate<BlocklingEntity, net.minecraft.world.level.LevelAccessor> predicate : type.spawnPredicates)
+        {
+            if (!predicate.test(this, world))
+            {
+                return false;
+            }
+        }
+
+        if (!extraBiomes.isEmpty() && !BlocklingSpawnConfig.matchesBiomeList(biome, extraBiomes))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Nonnull
+    private BlocklingType pickWeighted(@Nonnull List<BlocklingType> candidates, @Nonnull List<Integer> weights)
+    {
+        int total = 0;
+        for (int weight : weights)
+        {
+            total += weight;
+        }
+
+        if (total <= 0)
+        {
+            return candidates.get(random.nextInt(candidates.size()));
+        }
+
+        int roll = random.nextInt(total);
+        for (int i = 0; i < candidates.size(); i++)
+        {
+            roll -= weights.get(i);
+            if (roll < 0)
+            {
+                return candidates.get(i);
+            }
+        }
+
+        return candidates.get(candidates.size() - 1);
     }
 
     @Override
@@ -1315,6 +1486,12 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
         // Do NOT require instanceof Level — chunk generation uses WorldGenRegion (LevelAccessor only).
         if (reason == MobSpawnType.NATURAL || reason == MobSpawnType.CHUNK_GENERATION)
         {
+            BlocklingSpawnConfig spawnConfig = BlocklingsConfig.COMMON.spawn;
+            if (!spawnConfig.isEnabled())
+            {
+                return false;
+            }
+
             BlockPos support = blockPosition().below();
             if (!world.getBlockState(support).canOcclude())
             {
@@ -1325,14 +1502,15 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
             List<BlocklingEntity> nearbyBlocklings = List.of();
             if (world instanceof Level level)
             {
-                final int radius = 64;
+                final double radius = spawnConfig.radius();
                 AABB area = new AABB(
                         support.getX() - radius, level.getMinBuildHeight(), support.getZ() - radius,
                         support.getX() + radius, level.getMaxBuildHeight(), support.getZ() + radius);
                 nearbyBlocklings = new ArrayList<>(level.getEntitiesOfClass(BlocklingEntity.class, area));
                 nearbyBlocklings.removeIf(other -> other == this);
 
-                if (nearbyBlocklings.size() >= 3)
+                int cap = spawnConfig.cap();
+                if (cap > 0 && nearbyBlocklings.size() >= cap)
                 {
                     BlocklingSpawnDiagnostics.onRulesRejectedNearbyCap(world, reason, nearbyBlocklings.size());
                     return false;
@@ -1345,7 +1523,8 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
                 return false;
             }
 
-            if (!nearbyBlocklings.isEmpty()
+            if (spawnConfig.preventDuplicates()
+                    && !nearbyBlocklings.isEmpty()
                     && nearbyBlocklings.stream().anyMatch(blockling -> blockling.getBlocklingType() == blocklingType))
             {
                 BlocklingSpawnDiagnostics.onRulesRejectedDupType(world, reason, blocklingType.key);
@@ -1356,15 +1535,6 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
         }
 
         return true;
-    }
-
-    private static final TagKey<Biome> GRASS_PREFERRED_BIOMES_PLAINS = TagKey.create(Registries.BIOME, ResourceLocation.withDefaultNamespace("is_plains"));
-    private static final TagKey<Biome> GRASS_PREFERRED_BIOMES_FOREST = TagKey.create(Registries.BIOME, ResourceLocation.withDefaultNamespace("is_forest"));
-
-    private boolean isGrassPreferredBiome(@Nonnull net.minecraft.world.level.LevelAccessor world)
-    {
-        var biome = world.getBiome(blockPosition());
-        return biome.is(GRASS_PREFERRED_BIOMES_PLAINS) || biome.is(GRASS_PREFERRED_BIOMES_FOREST);
     }
 
     @Override
@@ -1477,7 +1647,7 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
     }
 
     /**
-     * @return the original blockling type.
+     * @return the original spawn type (permanent).
      */
     @Nonnull
     public BlocklingType getNaturalBlocklingType()
@@ -1486,8 +1656,29 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
     }
 
     /**
-     * Sets the natural blockling type to the given blockling type.
-     * Syncs to the client/server.
+     * @return true if the player has upgraded primary type at least once.
+     */
+    public boolean hasTransformed()
+    {
+        return hasTransformed;
+    }
+
+    /**
+     * Sets whether this blockling has been transformed (for spawn/item restore).
+     */
+    public void setHasTransformed(boolean transformed, boolean sync)
+    {
+        this.hasTransformed = transformed;
+        syncAppearanceData();
+        if (sync && !level().isClientSide())
+        {
+            // Appearance sync covers DATA_HAS_TRANSFORMED for tracking clients.
+        }
+    }
+
+    /**
+     * Sets the natural blockling type. Intended for spawn / item restore / admin only.
+     * Upgrades must never call this — natural type is permanent after creation.
      *
      * @param blocklingType the new blockling type.
      */
@@ -1497,8 +1688,7 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
     }
 
     /**
-     * Sets the natural blockling type to the given blockling type.
-     * Syncs to the client/server if sync is true.
+     * Sets the natural blockling type. Intended for spawn / item restore / admin only.
      *
      * @param blocklingType the new blockling type.
      * @param sync whether to sync to the client/server.
@@ -1518,7 +1708,7 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
     }
 
     /**
-     * @return the current blockling type.
+     * @return the current primary (upgraded) type.
      */
     @Nonnull
     public BlocklingType getBlocklingType()
@@ -1527,10 +1717,12 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
     }
 
     /**
-     * Sets the current blockling type to the given blockling type.
+     * Sets the current primary type. Marks the blockling as transformed when the type
+     * differs from natural, or when already transformed (allows returning to natural type
+     * while still showing Primary Type in the GUI).
      * Syncs to the client/server.
      *
-     * @param blocklingType the new blockling type.
+     * @param blocklingType the new primary type.
      */
     public void setBlocklingType(@Nonnull BlocklingType blocklingType)
     {
@@ -1538,15 +1730,24 @@ public class BlocklingEntity extends TamableAnimal implements IReadWriteNBT
     }
 
     /**
-     * Sets the current blockling type to the given blockling type.
+     * Sets the current primary type.
      * Syncs to the client/server if sync is true.
      *
-     * @param blocklingType the new blockling type.
+     * @param blocklingType the new primary type.
      * @param sync whether to sync to the client/server.
      */
     public void setBlocklingType(@Nonnull BlocklingType blocklingType, boolean sync)
     {
+        boolean typeChanged = this.blocklingType != blocklingType;
         this.blocklingType = blocklingType;
+
+        // Mark transformed when primary diverges from natural, or when changing primary after
+        // already transforming (so Primary Type still shows if set back to natural).
+        if (typeChanged && (hasTransformed || blocklingType != naturalBlocklingType))
+        {
+            hasTransformed = true;
+        }
+
         syncAppearanceData();
 
         stats.updateTypeBonuses(sync);

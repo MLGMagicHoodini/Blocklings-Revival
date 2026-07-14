@@ -5,12 +5,9 @@ import com.willr27.blocklings.entity.blockling.goal.config.whitelist.GoalWhiteli
 import com.willr27.blocklings.entity.blockling.goal.config.whitelist.Whitelist;
 import com.willr27.blocklings.network.BlocklingMessage;
 import com.willr27.blocklings.util.PacketBufferUtils;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.player.Player;
-/*import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.ResourceLocation;*/
+import net.minecraft.util.ResourceLocation;
 
 import javax.annotation.Nonnull;
 import java.util.UUID;
@@ -55,7 +52,7 @@ public class WhitelistAllMessage extends BlocklingMessage<WhitelistAllMessage>
     }
 
     @Override
-    public void encode(@Nonnull FriendlyByteBuf buf)
+    public void encode(@Nonnull PacketBuffer buf)
     {
         super.encode(buf);
 
@@ -71,7 +68,7 @@ public class WhitelistAllMessage extends BlocklingMessage<WhitelistAllMessage>
     }
 
     @Override
-    public void decode(@Nonnull FriendlyByteBuf buf)
+    public void decode(@Nonnull PacketBuffer buf)
     {
         super.decode(buf);
 
@@ -88,7 +85,7 @@ public class WhitelistAllMessage extends BlocklingMessage<WhitelistAllMessage>
     }
 
     @Override
-    protected void handle(@Nonnull Player player, @Nonnull BlocklingEntity blockling)
+    protected void handle(@Nonnull PlayerEntity player, @Nonnull BlocklingEntity blockling)
     {
         blockling.getTasks().getTask(taskId).getGoal().whitelists.get(whitelistId).setWhitelist(whitelist, false);
     }

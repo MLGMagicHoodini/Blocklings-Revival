@@ -7,6 +7,7 @@ import com.willr27.blocklings.network.messages.WhitelistAllMessage;
 import com.willr27.blocklings.network.messages.WhitelistIsUnlockedMessage;
 import com.willr27.blocklings.network.messages.WhitelistSingleMessage;
 import com.willr27.blocklings.util.BlocklingsTranslationTextComponent;
+import com.willr27.blocklings.util.BlockUtil;
 import com.willr27.blocklings.util.RegistryUtil;
 import com.willr27.blocklings.util.IReadWriteNBT;
 import com.willr27.blocklings.util.FriendlyByteBufUtils;
@@ -20,8 +21,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.chat.Component;
 
 import javax.annotation.Nonnull;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.List;
 
 public class GoalWhitelist extends Whitelist<ResourceLocation> implements IReadWriteNBT
 {
@@ -54,8 +57,12 @@ public class GoalWhitelist extends Whitelist<ResourceLocation> implements IReadW
 
     public void setWhitelist(Whitelist<ResourceLocation> whitelist, boolean sync)
     {
-        clear();
-        putAll(whitelist);
+        // Update in place — clear()+putAll() breaks Map.Entry refs held by the Ores GUI
+        // and freezes toggles (can't click entries after the first sync).
+        for (Map.Entry<ResourceLocation, Boolean> entry : whitelist.entrySet())
+        {
+            put(entry.getKey(), entry.getValue());
+        }
 
         if (sync)
         {
@@ -106,10 +113,7 @@ public class GoalWhitelist extends Whitelist<ResourceLocation> implements IReadW
     {
         setIsUnlocked(buf.readBoolean(), false);
 
-        clear();
-
         int size = buf.readInt();
-
         for (int i = 0; i < size; i++)
         {
             put(ResourceLocation.parse(FriendlyByteBufUtils.readString(buf)), buf.readBoolean());
@@ -118,13 +122,27 @@ public class GoalWhitelist extends Whitelist<ResourceLocation> implements IReadW
 
     public boolean isEntryWhitelisted(Object entry)
     {
+        // Locked whitelist skill = allow all (vanilla Blocklings behaviour).
+        if (!isUnlocked)
+        {
+            return true;
+        }
+
         Boolean result = null;
         if (entry instanceof Block) result = get(RegistryUtil.blockId((Block) entry));
         else if (entry instanceof Item) result = get(RegistryUtil.itemId((Item) entry));
         else if (entry instanceof Entity) result = get(RegistryUtil.entityTypeId(((Entity) entry).getType()));
+        else if (entry instanceof ResourceLocation) result = get((ResourceLocation) entry);
         else result = get(entry);
 
-        return result != null ? result : false;
+        if (result != null)
+        {
+            return result;
+        }
+
+        // Empty map (e.g. combat targets before world load) must not blacklist everything.
+        // Non-empty map + missing entry = disabled (do not mine unknown/disabled ores).
+        return isEmpty();
     }
 
     public boolean isEntryBlacklisted(Object entry)
@@ -144,7 +162,28 @@ public class GoalWhitelist extends Whitelist<ResourceLocation> implements IReadW
 
         if (sync)
         {
-            new WhitelistSingleMessage(blockling, goal.id, goal.whitelists.indexOf(this), entry, value).sync();
+            int whitelistIndex = goal.whitelists.indexOf(this);
+            if (whitelistIndex < 0)
+            {
+                return;
+            }
+            new WhitelistSingleMessage(blockling, goal.id, whitelistIndex, entry, value).sync();
+        }
+    }
+
+    /**
+     * Sets an entry and matching ore variants (iron ↔ deepslate iron) without rebuilding the whole map.
+     */
+    public void setEntryWithOreVariants(@Nonnull ResourceLocation entry, boolean value, boolean sync)
+    {
+        List<ResourceLocation> group = BlockUtil.oreWhitelistGroup(entry);
+        for (ResourceLocation id : group)
+        {
+            if (containsKey(id) || id.equals(entry))
+            {
+                // One single-entry packet each — WhitelistAllMessage was freezing the Ores GUI.
+                setEntry(id, value, sync);
+            }
         }
     }
 
@@ -156,7 +195,16 @@ public class GoalWhitelist extends Whitelist<ResourceLocation> implements IReadW
 
     public void toggleEntry(ResourceLocation entry, boolean sync)
     {
-        setEntry(entry, !get(entry), sync);
+        boolean newValue = !Boolean.TRUE.equals(get(entry));
+        // Ore stone/deepslate linking is mining-only — never for crops/logs.
+        if (type == Type.BLOCK && "ores".equals(key))
+        {
+            setEntryWithOreVariants(entry, newValue, sync);
+        }
+        else
+        {
+            setEntry(entry, newValue, sync);
+        }
     }
 
     @Override

@@ -33,7 +33,7 @@ public class WoodcuttingSkills
     public static final SkillInfo WHITELIST = new SkillInfo("6c1c96c3-c784-4022-bcdd-432618f5d33d",
             new SkillGeneralInfo(Skill.Type.OTHER, "woodcutting.whitelist"),
             new SkillDefaultsInfo(Skill.State.LOCKED),
-            new SkillRequirementsInfo(new HashMap<BlocklingAttributes.Level, Integer>() {{ put(BlocklingAttributes.Level.WOODCUTTING, 5); }}),
+            new SkillRequirementsInfo(new HashMap<BlocklingAttributes.Level, Integer>() {{ }}),
             new SkillGuiInfo(0, 70, SkillGuiInfo.ConnectionType.SINGLE_LONGEST_FIRST, 0xe0f1ff, new SkillGuiInfo.SkillIconTexture(Textures.Skills.Woodcutting.ICONS, 1, 0)))
     {
         @Override

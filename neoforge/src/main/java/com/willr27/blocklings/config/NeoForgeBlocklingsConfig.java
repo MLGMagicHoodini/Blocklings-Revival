@@ -137,6 +137,18 @@ public class NeoForgeBlocklingsConfig
         public final ModConfigSpec.BooleanValue preventDuplicateNearbyType;
 
         @Nonnull
+        public final ModConfigSpec.BooleanValue starterSpawnEnabled;
+
+        @Nonnull
+        public final ModConfigSpec.IntValue starterSpawnCount;
+
+        @Nonnull
+        public final ModConfigSpec.IntValue starterSpawnRadius;
+
+        @Nonnull
+        public final ModConfigSpec.IntValue starterSpawnDelayTicks;
+
+        @Nonnull
         public final Map<String, TypeSpawnConfig> typeSpawns = new LinkedHashMap<>();
 
         /**
@@ -207,16 +219,35 @@ public class NeoForgeBlocklingsConfig
                     .define("enabled", true);
 
             nearbyCap = builder
-                    .comment("Max untamed blocklings allowed within nearbyRadius (0 = unlimited).")
-                    .defineInRange("nearbyCap", 3, 0, 64);
+                    .comment("Max untamed blocklings allowed within nearbyRadius (0 = unlimited).",
+                            "Higher = denser natural spawns (default 10).")
+                    .defineInRange("nearbyCap", 6, 0, 64);
 
             nearbyRadius = builder
                     .comment("Horizontal radius used for nearbyCap and duplicate-type checks.")
-                    .defineInRange("nearbyRadius", 64.0D, 1.0D, 256.0D);
+                    .defineInRange("nearbyRadius", 40.0D, 1.0D, 256.0D);
 
             preventDuplicateNearbyType = builder
-                    .comment("If true, reject a spawn when another nearby blockling already has the same primary type.")
-                    .define("preventDuplicateNearbyType", true);
+                    .comment("If true, reject a spawn when another nearby blockling already has the same primary type.",
+                            "Makes the world feel emptier; leave false for healthier population.")
+                    .define("preventDuplicateNearbyType", false);
+
+            starterSpawnEnabled = builder
+                    .comment("Spawn a one-time pack of wild blocklings near each player on first join.",
+                            "Does not repeat when the player reconnects.")
+                    .define("starterSpawnEnabled", true);
+
+            starterSpawnCount = builder
+                    .comment("How many wild blocklings to spawn in the starter pack.")
+                    .defineInRange("starterSpawnCount", 5, 0, 16);
+
+            starterSpawnRadius = builder
+                    .comment("Horizontal radius around the player used for starter pack positions.")
+                    .defineInRange("starterSpawnRadius", 12, 2, 48);
+
+            starterSpawnDelayTicks = builder
+                    .comment("Ticks to wait after login before spawning the starter pack (chunk load).")
+                    .defineInRange("starterSpawnDelayTicks", 40, 1, 200);
 
             builder.push("types");
             for (BlocklingType type : BlocklingType.TYPES)
@@ -308,7 +339,7 @@ public class NeoForgeBlocklingsConfig
             builder.push("Misc");
 
             disableDirtyBlocklings = builder
-                    .comment("Set this to true to use the pure blockling type texture instead of merged textures (merged assets are not bundled).")
+                    .comment("Set this to true to use the pure primary-type texture instead of merged natural+primary textures. Default true because merged textures are generated at runtime and may be missing.")
                     .define("disableDirtyBlocklings", true);
 
             builder.pop();

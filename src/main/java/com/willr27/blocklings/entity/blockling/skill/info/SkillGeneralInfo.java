@@ -2,6 +2,7 @@ package com.willr27.blocklings.entity.blockling.skill.info;
 
 import com.willr27.blocklings.entity.blockling.skill.Skill;
 import com.willr27.blocklings.util.BlocklingsTranslationTextComponent;
+import net.minecraft.util.text.TranslationTextComponent;
 
 import javax.annotation.Nonnull;
 

@@ -16,7 +16,8 @@ public class Whitelist<T> extends TreeMap<T, Boolean>
 
     public void setEntry(T entry, boolean value)
     {
-        replace(entry, value);
+        // put — replace() silently no-ops if the key is missing on one side (client/server desync).
+        put(entry, value);
     }
 
     public void toggleEntry(T entry)

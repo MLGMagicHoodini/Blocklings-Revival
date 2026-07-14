@@ -3,25 +3,25 @@ package com.willr27.blocklings.event;
 import com.willr27.blocklings.Blocklings;
 import com.willr27.blocklings.config.BlocklingsConfig;
 import com.willr27.blocklings.entity.blockling.BlocklingEntity;
+import com.willr27.blocklings.entity.blockling.BlocklingMobTargeting;
 import com.willr27.blocklings.entity.blockling.ability.BlocklingAbilityRegistry;
 import com.willr27.blocklings.entity.blockling.ability.BlocklingAbilitySupport;
 import com.willr27.blocklings.entity.blockling.ability.TypeFamily;
 import com.willr27.blocklings.entity.blockling.BlocklingType;
-import com.willr27.blocklings.entity.blockling.skill.skills.CombatSkills;
+import com.willr27.blocklings.entity.blockling.combat.HuntLootHandler;
 import com.willr27.blocklings.item.BlocklingWhistleItem;
 import com.willr27.blocklings.util.BlockUtil;
 import com.willr27.blocklings.util.EntityUtil;
 import com.willr27.blocklings.util.ToolUtil;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
@@ -36,7 +36,7 @@ public class ForgeEventBusEvents
     public static void onWorldLoad(@Nonnull LevelEvent.Load event)
     {
         if (event.getLevel() instanceof Level level) {
-            EntityUtil.latestWorld = level;
+            EntityUtil.onWorldAvailable(level);
             BlockUtil.latestWorld = level;
         }
 
@@ -45,6 +45,12 @@ public class ForgeEventBusEvents
         ToolUtil.init();
 
         BlocklingWhistleItem.BLOCKLINGS_TO_WHISTLES.clear();
+    }
+
+    @SubscribeEvent
+    public static void onEntityJoinLevel(@Nonnull EntityJoinLevelEvent event)
+    {
+        BlocklingMobTargeting.tryAddBlocklingTargetGoal(event.getEntity());
     }
 
     @SubscribeEvent
@@ -90,33 +96,13 @@ public class ForgeEventBusEvents
     @SubscribeEvent
     public static void onLivingDropsEvent(@Nonnull LivingDropsEvent event)
     {
-        if (event.getSource().getEntity() instanceof BlocklingEntity blockling)
+        if (event.getSource().getEntity() instanceof BlocklingEntity blockling
+                && HuntLootHandler.shouldHandleHuntLoot(blockling))
         {
-            if (blockling.getSkills().getSkill(CombatSkills.HUNTER).isBought() && blockling.wasLastAttackHunt)
-            {
-                for (ItemEntity itemEntity : event.getDrops())
-                {
-                    ItemStack itemStack = blockling.getEquipment().addItem(itemEntity.getItem());
-
-                    if (blockling.getSkills().getSkill(CombatSkills.ANIMAL_HUNTER).isBought() && event.getEntity() instanceof Animal)
-                    {
-                        itemStack.setCount(itemStack.getCount() * 2);
-                    }
-                    else if (blockling.getSkills().getSkill(CombatSkills.MONSTER_HUNTER).isBought() && event.getEntity() instanceof Monster)
-                    {
-                        itemStack.setCount(itemStack.getCount() * 2);
-                    }
-
-                    itemStack = blockling.getEquipment().addItem(itemStack);
-
-                    if (!itemStack.isEmpty())
-                    {
-                        blockling.dropItemStack(itemStack);
-                    }
-                }
-
-                event.setCanceled(true);
-            }
+            // Double the original drop counts first, then vacuum into inventory.
+            // Legacy 1.18 doubled the addItem remainder (often empty) so Animal/Monster Hunter did almost nothing.
+            HuntLootHandler.collectHuntDrops(blockling, event.getEntity(), event.getDrops());
+            event.setCanceled(true);
         }
 
         if (event.isCanceled() || event.getDrops().isEmpty())

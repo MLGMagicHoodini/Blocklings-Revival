@@ -146,7 +146,7 @@ public class GeneralSkills
                 if (task.isConfigured() && task.getGoal() instanceof BlocklingContainerGoal)
                 {
                     BlocklingContainerGoal goal = (BlocklingContainerGoal) task.getGoal();
-                    goal.itemConfigurationTypeProperty.setEnabled(true);
+                    goal.itemConfigurationTypeProperty.setEnabled(true, true);
                 }
             }
         }

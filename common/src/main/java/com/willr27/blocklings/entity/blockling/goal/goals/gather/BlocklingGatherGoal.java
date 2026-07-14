@@ -14,7 +14,6 @@ import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
-import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -26,6 +25,13 @@ import java.util.UUID;
 public abstract class BlocklingGatherGoal extends BlocklingTargetGoal<BlockPos>
 {
     /**
+     * How far (horizontally, from the owner) a gather target may be while the blockling has an
+     * enabled Follow task. Keeps a tamed, following blockling working the area around its owner
+     * instead of drifting tree-to-tree (or ore-to-ore) across the map and never coming back.
+     */
+    private static final double WORK_LEASH_FROM_OWNER = 10.0;
+
+    /**
      * @param id the id associated with the owning task of this goal.
      * @param blockling the blockling the goal is assigned to.
      * @param tasks the associated tasks.
@@ -33,6 +39,23 @@ public abstract class BlocklingGatherGoal extends BlocklingTargetGoal<BlockPos>
     public BlocklingGatherGoal(@Nonnull UUID id, @Nonnull BlocklingEntity blockling, @Nonnull BlocklingTasks tasks)
     {
         super(id, blockling, tasks);
+    }
+
+    /**
+     * @return true if the pos is within the owner work-leash (or no leash applies: wild blockling,
+     *         owner offline, or no enabled Follow task — i.e. a stationed worker).
+     */
+    protected boolean isWithinOwnerWorkLeash(@Nonnull BlockPos pos)
+    {
+        net.minecraft.world.entity.LivingEntity owner = blockling.getOwner();
+        if (owner == null || !blockling.getTasks().hasEnabledFollowTask())
+        {
+            return true;
+        }
+
+        double dx = owner.getX() - (pos.getX() + 0.5);
+        double dz = owner.getZ() - (pos.getZ() + 0.5);
+        return (dx * dx + dz * dz) <= WORK_LEASH_FROM_OWNER * WORK_LEASH_FROM_OWNER;
     }
 
     @Override
@@ -116,7 +139,8 @@ public abstract class BlocklingGatherGoal extends BlocklingTargetGoal<BlockPos>
             blockling.getLookControl().setLookAt(getTarget().getX() + 0.5, getTarget().getY() + 0.5, getTarget().getZ() + 0.5);
         }
 
-        if (blockling.getSkills().getSkill(GeneralSkills.AUTOSWITCH).isBought())
+        // Equip a suitable tool from inventory before chopping (not only with AUTOSWITCH).
+        if (!canHarvestTargetPos() || blockling.getSkills().getSkill(GeneralSkills.AUTOSWITCH).isBought())
         {
             blockling.getEquipment().trySwitchToBestTool(BlocklingHand.BOTH, new ToolContext(getToolType(), getTargetBlockState()));
         }
@@ -147,17 +171,9 @@ public abstract class BlocklingGatherGoal extends BlocklingTargetGoal<BlockPos>
         {
             return true;
         }
-        else if (blockling.getSkills().getSkill(GeneralSkills.AUTOSWITCH).isBought())
-        {
-            Pair<ItemStack, ItemStack> bestTools = blockling.getEquipment().findBestToolsToSwitchTo(BlocklingHand.BOTH, new ToolContext(getToolType(), blockState));
 
-            if (ToolUtil.canToolHarvest(bestTools.getKey(), blockState) || ToolUtil.canToolHarvest(bestTools.getValue(), blockState))
-            {
-                return true;
-            }
-        }
-
-        return false;
+        // Peek inventory for a usable tool without swapping (findBestToolsToSwitchTo mutates slots).
+        return blockling.getEquipment().hasInventoryToolThatCanHarvest(getToolType(), blockState);
     }
 
     /**
@@ -178,7 +194,7 @@ public abstract class BlocklingGatherGoal extends BlocklingTargetGoal<BlockPos>
      */
     protected boolean isValidTargetPos(@Nullable BlockPos blockPos)
     {
-        return blockPos != null && !badTargets.contains(blockPos);
+        return blockPos != null && !badTargets.contains(blockPos) && isWithinOwnerWorkLeash(blockPos);
     }
 
     /**

@@ -2,17 +2,13 @@ package com.willr27.blocklings.item;
 
 import com.willr27.blocklings.Blocklings;
 import com.willr27.blocklings.entity.BlocklingsEntityTypes;
-import net.minecraft.world.item.Item;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.registries.DeferredRegister;
-import net.neoforged.neoforge.registries.NeoForgeRegistries;
-/*import net.minecraft.item.Item;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraftforge.common.ForgeSpawnEggItem;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.RegistryObject;
 import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;*/
+import net.minecraftforge.registries.ForgeRegistries;
 
 import javax.annotation.Nonnull;
 
@@ -24,7 +20,7 @@ public class BlocklingsItems
     /**
      * The deferred item registry.
      */
-    public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(NeoForgeRegistries.ITEMS, Blocklings.MODID);
+    public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, Blocklings.MODID);
 
     public static final RegistryObject<Item> BLOCKLING_SPAWN_EGG = ITEMS.register("blockling_spawn_egg", () -> new ForgeSpawnEggItem(BlocklingsEntityTypes.BLOCKLING, 0x785439, 0x466f33, new Item.Properties().tab(ItemGroup.TAB_MISC)));
     public static final RegistryObject<Item> BLOCKLING = ITEMS.register("blockling", BlocklingItem::new);

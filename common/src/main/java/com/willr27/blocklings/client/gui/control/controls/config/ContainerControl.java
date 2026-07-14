@@ -525,10 +525,26 @@ public class ContainerControl extends GridPanel
      */
     public void onContainerSelectFromWorld(@Nonnull Block block, BlockPos blockPos)
     {
+        // Apply pos + block atomically so sync does not send Blank/AIR leftovers.
+        containerInfo.setBlockPos(blockPos);
+        containerInfo.setBlock(block);
+        if (containerInfo.getSides().isEmpty())
+        {
+            containerInfo.setSides(java.util.Arrays.asList(
+                    Direction.UP, Direction.WEST, Direction.EAST, Direction.SOUTH, Direction.NORTH, Direction.DOWN));
+        }
+
         xLocation.setValue(blockPos.getX());
         yLocation.setValue(blockPos.getY());
         zLocation.setValue(blockPos.getZ());
-        setBlock(block);
+
+        blockIcon.setBlock(block);
+        sidePriority.setBlock(block);
+        name.setText(new ItemStack(block).getHoverName());
+        itemSearch.setVisibility(Visibility.COLLAPSED);
+
+        // Same instance as in the goal list — indexOf must match by reference.
+        eventBus.post(this, new ValueChangedEvent<>(new ContainerInfo(), containerInfo));
     }
 
     /**
@@ -588,57 +604,48 @@ public class ContainerControl extends GridPanel
      * @param blockPos the block position.
      * @return whether the event should be cancelled.
      */
-    static boolean handleContainerSelect(@Nonnull Player player, boolean isFinal, @Nullable BlockPos blockPos)
+    public static boolean handleContainerSelect(@Nonnull Player player, boolean isFinal, @Nullable BlockPos blockPos)
     {
         if (!player.level().isClientSide())
         {
             ContainerConfigureCapability cap = ContainerConfigureCapability.get(player);
 
-            if (cap != null)
+            boolean wereConfiguring = cap.isConfiguring;
+
+            // This can be called for both hands, so we need to make sure we only stop configuring if we are actually done.
+            if (isFinal)
             {
-                boolean wereConfiguring = cap.isConfiguring;
-
-                // This can be called for both hands, so we need to make sure we only stop configuring if we are actually done.
-                if (isFinal)
-                {
-                    cap.isConfiguring = false;
-                }
-
-                if (wereConfiguring)
-                {
-                    return true;
-                }
+                cap.isConfiguring = false;
             }
 
+            return wereConfiguring;
+        }
+
+        if (currentlyConfiguredContainerControl == null)
+        {
             return false;
         }
-        else if (currentlyConfiguredContainerControl != null)
+
+        if (blockPos != null && BlockUtil.isContainer(player.level(), blockPos))
         {
-            if (blockPos != null)
-            {
-                Block block = player.level().getBlockState(blockPos).getBlock();
-
-                if (BlockUtil.isContainer(block))
-                {
-                    currentlyConfiguredContainerControl.onContainerSelectFromWorld(block, blockPos);
-                }
-                else
-                {
-                    currentlyConfiguredContainerControl.setParent(null);
-                }
-            }
-            else
-            {
-                currentlyConfiguredContainerControl.setParent(null);
-            }
-
-            BlocklingGuiHandler.openScreen(screenToGoBackTo);
-            currentlyConfiguredContainerControl = null;
-            screenToGoBackTo = null;
-
-            return true;
+            Block block = player.level().getBlockState(blockPos).getBlock();
+            currentlyConfiguredContainerControl.onContainerSelectFromWorld(block, blockPos);
+        }
+        else
+        {
+            // Cancel / invalid block: drop the unfinished Blank entry.
+            currentlyConfiguredContainerControl.setParent(null);
         }
 
-        return false;
+        Screen screen = screenToGoBackTo;
+        currentlyConfiguredContainerControl = null;
+        screenToGoBackTo = null;
+
+        if (screen != null)
+        {
+            BlocklingGuiHandler.openScreen(screen);
+        }
+
+        return true;
     }
 }

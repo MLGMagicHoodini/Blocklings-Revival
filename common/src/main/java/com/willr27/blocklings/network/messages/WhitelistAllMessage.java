@@ -49,7 +49,9 @@ public class WhitelistAllMessage extends BlocklingMessage<WhitelistAllMessage>
         super(blockling);
         this.taskId = taskId;
         this.whitelistId = whitelistId;
-        this.whitelist = whitelist;
+        // Snapshot — do not keep a live TreeMap ref (encode/GUI race + clear bugs).
+        this.whitelist = new Whitelist<>();
+        this.whitelist.putAll(whitelist);
     }
 
     @Override
@@ -89,7 +91,8 @@ public class WhitelistAllMessage extends BlocklingMessage<WhitelistAllMessage>
     protected void handle(@Nonnull Player player, @Nonnull BlocklingEntity blockling)
     {
         var task = blockling.getTasks().getTaskOrLog(taskId, "WhitelistAllMessage");
-        if (task != null && task.getGoal() != null)
+        if (task != null && task.getGoal() != null
+                && whitelistId >= 0 && whitelistId < task.getGoal().whitelists.size())
         {
             task.getGoal().whitelists.get(whitelistId).setWhitelist(whitelist, false);
         }

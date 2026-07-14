@@ -205,26 +205,6 @@ public final class BlocklingAbilityHandlers
         }
 
         @Override
-        public void tickPassiveSlow(@Nonnull BlocklingEntity blockling)
-        {
-            if (!passiveEnabled())
-            {
-                return;
-            }
-
-            BlockPos center = blockling.blockPosition();
-            BlocklingAbilitySupport.forEachBlockInRadius(center, radius(), pos ->
-            {
-                BlockState state = blockling.level().getBlockState(pos);
-                if (state.is(Blocks.DIRT) && blockling.level().getBlockState(pos.above()).isAir()
-                        && BlocklingAbilitySupport.passChance(blockling.getRandom(), passiveChance() * 0.25D))
-                {
-                    BlocklingAbilitySupport.setBlock(blockling.level(), pos, Blocks.FARMLAND.defaultBlockState());
-                }
-            });
-        }
-
-        @Override
         public boolean activate(@Nonnull BlocklingEntity blockling)
         {
             if (!activeEnabled())
@@ -366,7 +346,7 @@ public final class BlocklingAbilityHandlers
                             continue;
                         }
 
-                        WorldUtil.Tree tree = WorldUtil.findTreeFromPos(blockling.level(), testPos, 40, t -> true, t -> true);
+                        WorldUtil.Tree tree = WorldUtil.findTreeFromPos(blockling.level(), testPos, 80, t -> true, t -> true);
                         if (!tree.isValid(BlocklingsConfig.COMMON.defaultMinLeavesToLogRatio.get().floatValue()))
                         {
                             continue;

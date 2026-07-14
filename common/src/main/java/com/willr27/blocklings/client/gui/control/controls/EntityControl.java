@@ -106,6 +106,11 @@ public class EntityControl extends Control
         }
 
         setIsHovered(true);
+        // Pass hover to parent so EntryControl can show tooltips over the entity preview.
+        if (!isInteractive())
+        {
+            return;
+        }
         e.setIsHandled(true);
     }
 

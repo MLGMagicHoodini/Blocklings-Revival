@@ -1,8 +1,6 @@
 package com.willr27.blocklings.util;
 
-/*
 import net.minecraft.util.text.TranslationTextComponent;
-*/
 
 public class BlocklingsTranslationTextComponent extends TranslationTextComponent
 {

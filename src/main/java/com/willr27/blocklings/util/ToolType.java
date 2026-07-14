@@ -1,10 +1,7 @@
 package com.willr27.blocklings.util;
 
-/*import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;*/
-
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 
 public enum ToolType
 {

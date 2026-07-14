@@ -329,6 +329,8 @@ public class Control extends BaseControl
         }
 
         Colour colour = getForegroundColour();
+        colour.apply();
+        matrixStack.setColor(colour.getR(), colour.getG(), colour.getB(), colour.getA());
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.enableDepthTest();
@@ -348,6 +350,8 @@ public class Control extends BaseControl
         matrixStack.pose().popPose();
 
         undoScissor(scissorStack);
+        matrixStack.setColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
     @Override
@@ -576,7 +580,13 @@ public class Control extends BaseControl
         {
             if (isPressedOrDescendant())
             {
-                if (isDraggable())
+                // A pressed non-draggable child can block ancestor canvas panning
+                // (e.g. clicking a skill must not start SkillsCanvas drag).
+                if (!isDraggable() && !shouldPropagateDrag())
+                {
+                    e.setIsHandled(true);
+                }
+                else if (isDraggable())
                 {
                     double pixelDragDifX = e.mouseX - getScreen().getPressedStartPixelX();
                     double pixelDragDifY = e.mouseY - getScreen().getPressedStartPixelY();

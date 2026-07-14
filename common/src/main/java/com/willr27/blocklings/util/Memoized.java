@@ -1,6 +1,8 @@
 package com.willr27.blocklings.util;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -29,8 +31,31 @@ public final class Memoized<T> implements Supplier<T>
         if (!initialized)
         {
             value = factory.get();
+            // Never permanently cache empty collections from pre-tag / pre-world init
+            // (ores list, attack targets, etc. — otherwise mining whitelist stays blank forever).
+            if (value instanceof Map<?, ?> map && map.isEmpty())
+            {
+                return value;
+            }
+            if (value instanceof java.util.Collection<?> collection && collection.isEmpty())
+            {
+                return value;
+            }
             initialized = true;
         }
         return value;
+    }
+
+    /** Clears the cached value so the next {@link #get()} rebuilds it. */
+    public synchronized void reset()
+    {
+        initialized = false;
+        value = null;
+    }
+
+    @Nullable
+    public synchronized T peek()
+    {
+        return initialized ? value : null;
     }
 }

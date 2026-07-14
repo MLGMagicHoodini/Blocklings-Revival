@@ -79,10 +79,15 @@ public class XpBarControl extends Control
             @Override
             public void onTick()
             {
-                setWidth(getBackgroundTexture().width * getXpPercentage());
+                Texture full = level.getXpBarForegroundTexture();
+                int filledWidth = Math.max(0, (int) Math.round(full.width * getXpPercentage()));
+                setBackgroundTexture(full.width(filledWidth));
+                setWidth(filledWidth);
             }
         };
         xpBarForegroundControl.setParent(xpBarControl);
+        // Required so setWidth(xp%) is not overwritten by fit-to-full-texture (same as 1.18 / HealthBarControl).
+        xpBarForegroundControl.setFitWidthToContent(false);
         xpBarForegroundControl.onTick();
 
         LevelIconControl rightIconControl = new LevelIconControl(false);

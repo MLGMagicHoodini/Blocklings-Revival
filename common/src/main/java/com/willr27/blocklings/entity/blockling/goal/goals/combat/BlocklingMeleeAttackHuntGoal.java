@@ -10,6 +10,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.core.registries.BuiltInRegistries;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.UUID;
 
 /**
@@ -17,6 +18,13 @@ import java.util.UUID;
  */
 public class BlocklingMeleeAttackHuntGoal extends BlocklingMeleeAttackGoal
 {
+    /**
+     * How far (in blocks, horizontally) a hunt target may be from the owner when the blockling
+     * also has an enabled Follow task. Keeps a following blockling hunting around its owner
+     * instead of chasing prey across the map and never coming back.
+     */
+    private static final double HUNT_LEASH_FROM_OWNER = 12.0;
+
     /**
      * @param id the id associated with the goal's task.
      * @param blockling the blockling.
@@ -37,7 +45,7 @@ public class BlocklingMeleeAttackHuntGoal extends BlocklingMeleeAttackGoal
             return false;
         }
 
-        if (isTargetValid())
+        if (isTargetValid() && isWithinOwnerHuntLeash(getTarget()))
         {
             return true;
         }
@@ -48,7 +56,7 @@ public class BlocklingMeleeAttackHuntGoal extends BlocklingMeleeAttackGoal
             {
                 LivingEntity livingEntity = (LivingEntity) entity;
 
-                if (isValidTarget(livingEntity))
+                if (isValidTarget(livingEntity) && isWithinOwnerHuntLeash(livingEntity))
                 {
                     setTarget(livingEntity);
 
@@ -58,6 +66,28 @@ public class BlocklingMeleeAttackHuntGoal extends BlocklingMeleeAttackGoal
         }
 
         return false;
+    }
+
+    /**
+     * @return true if the entity is close enough to the owner to hunt, or if there is no active
+     *         Follow task (in which case the blockling is free to roam and hunt anywhere).
+     */
+    private boolean isWithinOwnerHuntLeash(@Nullable LivingEntity entity)
+    {
+        if (entity == null)
+        {
+            return false;
+        }
+
+        LivingEntity owner = blockling.getOwner();
+        if (owner == null || !blockling.getTasks().hasEnabledFollowTask())
+        {
+            return true;
+        }
+
+        double dx = owner.getX() - entity.getX();
+        double dz = owner.getZ() - entity.getZ();
+        return (dx * dx + dz * dz) <= HUNT_LEASH_FROM_OWNER * HUNT_LEASH_FROM_OWNER;
     }
 
     @Override

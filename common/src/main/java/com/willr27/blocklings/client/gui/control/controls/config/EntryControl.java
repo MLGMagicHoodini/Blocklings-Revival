@@ -15,6 +15,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.core.registries.BuiltInRegistries;
 import com.willr27.blocklings.loader.Dist;
@@ -89,7 +90,16 @@ public class EntryControl extends Control
             if (whitelist.type == Whitelist.Type.BLOCK)
             {
                 Block block = BuiltInRegistries.BLOCK.get(entry.getKey());
-                stack = block.asItem().getDefaultInstance();
+                // Crop blocks have asItem() == AIR; show the seed/item icon instead.
+                Item seed = com.willr27.blocklings.util.BlockUtil.getCropSeedItem(block);
+                if (seed != Items.AIR)
+                {
+                    stack = seed.getDefaultInstance();
+                }
+                else
+                {
+                    stack = block.asItem().getDefaultInstance();
+                }
             }
             else if (whitelist.type == Whitelist.Type.ITEM)
             {
@@ -112,21 +122,28 @@ public class EntryControl extends Control
     @Override
     public void onRender(@Nonnull GuiGraphics matrixStack, @Nonnull ScissorStack scissorStack, double mouseX, double mouseY, float partialTicks)
     {
-        if (entry.getValue())
+        // Always read live map value — stale Map.Entry after sync made icons stuck red/green.
+        boolean enabled = Boolean.TRUE.equals(whitelist.get(entry.getKey()));
+
+        if (enabled)
         {
+            matrixStack.setColor(0.4f, 0.8f, 0.4f, 1.0f);
             renderTextureAsBackground(matrixStack, ENTRY_SELECTED);
         }
         else
         {
+            matrixStack.setColor(0.8f, 0.3f, 0.3f, 1.0f);
             renderTextureAsBackground(matrixStack, ENTRY_UNSELECTED);
         }
 
-        if (entry.getValue())
+        if (enabled)
         {
-            }
+            matrixStack.setColor(1.0f, 1.0f, 1.0f, 1.0f);
+        }
         else
         {
-            }
+            matrixStack.setColor(0.5f, 0.5f, 0.5f, 1.0f);
+        }
     }
 
     @Override
@@ -154,7 +171,14 @@ public class EntryControl extends Control
     {
         if (isPressed())
         {
-            whitelist.toggleEntry(entry.getKey());
+            try
+            {
+                whitelist.toggleEntry(entry.getKey());
+            }
+            catch (Exception ex)
+            {
+                com.willr27.blocklings.Blocklings.LOGGER.error("Failed to toggle whitelist entry " + entry.getKey(), ex);
+            }
         }
 
         e.setIsHandled(true);

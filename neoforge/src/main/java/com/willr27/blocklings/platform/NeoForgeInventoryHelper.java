@@ -1,9 +1,11 @@
 package com.willr27.blocklings.platform;
 
 import com.willr27.blocklings.inventory.BlocklingItemHandler;
+import com.willr27.blocklings.inventory.ContainerItemHandlerAdapter;
 import com.willr27.blocklings.platform.services.IInventoryHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -19,12 +21,32 @@ public final class NeoForgeInventoryHelper implements IInventoryHelper
     @Nullable
     public BlocklingItemHandler getItemHandler(@Nonnull Level level, @Nonnull BlockPos pos, @Nonnull BlockEntity blockEntity, @Nonnull Direction direction)
     {
-        IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, blockEntity.getBlockState(), blockEntity, direction);
+        // Prefer the simple 3-arg query documented by NeoForge, then fall back.
+        IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, direction);
         if (handler == null)
         {
-            return null;
+            handler = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, null);
         }
-        return new NeoForgeItemHandlerAdapter(handler);
+        if (handler == null)
+        {
+            handler = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, blockEntity.getBlockState(), blockEntity, direction);
+        }
+        if (handler == null)
+        {
+            handler = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, blockEntity.getBlockState(), blockEntity, null);
+        }
+
+        if (handler != null)
+        {
+            return new NeoForgeItemHandlerAdapter(handler);
+        }
+
+        if (blockEntity instanceof Container container)
+        {
+            return new ContainerItemHandlerAdapter(container, direction);
+        }
+
+        return null;
     }
 
     private record NeoForgeItemHandlerAdapter(IItemHandler handler) implements BlocklingItemHandler

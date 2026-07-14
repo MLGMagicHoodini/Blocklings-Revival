@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "com.willr27.blocklings.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "LivingEntityHuntLootMixin",
+    "EntitySpawnAtLocationMixin"
+  ],
+  "client": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

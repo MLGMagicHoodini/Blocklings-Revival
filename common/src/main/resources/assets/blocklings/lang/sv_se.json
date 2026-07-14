@@ -226,7 +226,7 @@
   "blocklings.skill.combat.wither_attacks.desc": "Din blockering förtvinar deras mål.",
   "blocklings.skill.mining.novice_miner.name": "Nybörjare gruvarbetare",
   "blocklings.skill.mining.novice_miner.desc": "Låser upp uppgiften \"Mine Ores\".",
-  "blocklings.skill.mining.whitelist.name": "Vitlista för malm",
+  "blocklings.skill.mining.whitelist.name": "Malm vitlista",
   "blocklings.skill.mining.whitelist.desc": "Låser upp malmvitlistan för uppgiften \"Mine Ores\".",
   "blocklings.skill.mining.efficiency.name": "Effektivitet",
   "blocklings.skill.mining.efficiency.desc": "Bonus 10% gruvhastighet.",

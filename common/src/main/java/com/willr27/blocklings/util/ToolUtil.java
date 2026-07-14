@@ -12,7 +12,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.ItemTags;
-import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -151,45 +151,71 @@ public class ToolUtil {
     }
 
     private static float getAttributeAmount(ItemStack stack, Holder<net.minecraft.world.entity.ai.attributes.Attribute> attribute) {
-        ItemAttributeModifiers modifiers = stack.getOrDefault(DataComponents.ATTRIBUTE_MODIFIERS, ItemAttributeModifiers.EMPTY);
-        for (ItemAttributeModifiers.Entry entry : modifiers.modifiers()) {
-            if (entry.attribute().is(attribute)) {
-                return (float) entry.modifier().amount();
-            }
+        ItemAttributeModifiers modifiers = stack.get(DataComponents.ATTRIBUTE_MODIFIERS);
+        if (modifiers == null || modifiers.modifiers().isEmpty()) {
+            modifiers = stack.getItem().components().get(DataComponents.ATTRIBUTE_MODIFIERS);
         }
-        return 0.0f;
-    }
-
-    public static float getToolEnchantmentDamage(@Nonnull ItemStack stack, @Nonnull LivingEntity target) {
-        if (!(target.level() instanceof ServerLevel serverLevel)) {
+        if (modifiers == null) {
             return 0.0f;
         }
-        DamageSource source = target.damageSources().mobAttack(null);
-        return EnchantmentHelper.modifyDamage(serverLevel, stack, target, source, 0.0f);
+
+        double total = 0.0D;
+        for (ItemAttributeModifiers.Entry entry : modifiers.modifiers()) {
+            if (entry.attribute().is(attribute)) {
+                total += entry.modifier().amount();
+            }
+        }
+        return (float) total;
     }
 
-    public static float getToolKnockbackLevel(@Nonnull ItemStack stack) {
-        return enchantLevel(stack, Enchantments.KNOCKBACK);
+    /**
+     * Extra melee damage from weapon enchantments (Sharpness, Smite, Apotheosis, …).
+     * Must use a real attacker — {@code mobAttack(null)} crashes on 1.21+.
+     */
+    public static float getToolEnchantmentDamage(@Nonnull ItemStack stack, @Nonnull LivingEntity attacker, @Nonnull LivingEntity target)
+    {
+        return EnchantmentCompat.modifyAttackDamage(stack, attacker, target);
     }
 
-    public static float getToolFireAspectLevel(@Nonnull ItemStack stack) {
-        return enchantLevel(stack, Enchantments.FIRE_ASPECT);
+    public static float getToolKnockbackLevel(@Nonnull ItemStack stack)
+    {
+        return EnchantmentCompat.getLevel(stack, Enchantments.KNOCKBACK);
+    }
+
+    /**
+     * Knockback with vanilla Knockback + any modded knockback effects on the weapon.
+     */
+    public static float getToolKnockback(@Nonnull ItemStack stack, @Nonnull LivingEntity attacker, @Nonnull Entity target, float baseKnockback)
+    {
+        return EnchantmentCompat.modifyKnockback(stack, attacker, target, baseKnockback);
+    }
+
+    public static float getToolFireAspectLevel(@Nonnull ItemStack stack)
+    {
+        return EnchantmentCompat.getFireAspectLevel(stack);
+    }
+
+    /** Efficiency enchantment level (0 if missing / unreadable). */
+    public static float getToolEfficiencyLevel(@Nonnull ItemStack stack)
+    {
+        return EnchantmentCompat.getLevel(stack, Enchantments.EFFICIENCY);
     }
 
     public static float getDefaultToolMiningSpeedWithEnchantments(@Nonnull ItemStack stack) {
-        return getDefaultToolMiningSpeed(stack) + getToolEnchantmentHarvestSpeed(stack);
+        return getToolHarvestSpeedWithEnchantments(stack, Blocks.STONE.defaultBlockState());
     }
 
     public static float getDefaultToolWoodcuttingSpeedWithEnchantments(@Nonnull ItemStack stack) {
-        return getDefaultToolWoodcuttingSpeed(stack) + getToolEnchantmentHarvestSpeed(stack);
+        return getToolHarvestSpeedWithEnchantments(stack, Blocks.OAK_LOG.defaultBlockState());
     }
 
     public static float getDefaultToolFarmingSpeedWithEnchantments(@Nonnull ItemStack stack) {
-        return getDefaultToolFarmingSpeed(stack) + getToolEnchantmentHarvestSpeed(stack);
+        return getToolHarvestSpeedWithEnchantments(stack, Blocks.HAY_BLOCK.defaultBlockState());
     }
 
     public static float getToolHarvestSpeedWithEnchantments(@Nonnull ItemStack stack, @Nonnull BlockState blockState) {
-        return getToolHarvestSpeed(stack, blockState) + getToolEnchantmentHarvestSpeed(stack);
+        // Already includes Efficiency / destroy-speed bonuses — do not add Efficiency twice.
+        return getToolHarvestSpeed(stack, blockState);
     }
 
     public static float getDefaultToolMiningSpeed(@Nonnull ItemStack stack) {
@@ -208,10 +234,14 @@ public class ToolUtil {
         if (!isUseableTool(stack)) {
             return 0.0f;
         }
-        if (isTinkersTool(stack) && canToolHarvest(stack, blockState)) {
-            return TinkersConstructProxy.instance.getToolHarvestSpeed(stack, blockState);
+        try {
+            if (isTinkersTool(stack) && canToolHarvest(stack, blockState)) {
+                return TinkersConstructProxy.instance.getToolHarvestSpeed(stack, blockState);
+            }
+            return EnchantmentCompat.getHarvestSpeed(stack, blockState);
+        } catch (Throwable ignored) {
+            return 1.0f;
         }
-        return stack.getDestroySpeed(blockState);
     }
 
     public static float getDefaultToolSpeed(@Nonnull ItemStack stack, @Nonnull com.willr27.blocklings.util.ToolType toolType) {
@@ -232,39 +262,72 @@ public class ToolUtil {
         };
     }
 
-    public static float getToolEnchantmentHarvestSpeed(@Nonnull ItemStack stack) {
-        int level = (int) enchantLevel(stack, Enchantments.EFFICIENCY);
-        return level > 0 ? level * level + 1.0f : 0.0f;
+    public static float getToolEnchantmentHarvestSpeed(@Nonnull ItemStack stack)
+    {
+        return EnchantmentCompat.enchantmentHarvestSpeedBonus(stack);
     }
 
-    public static boolean canToolHarvest(@Nonnull ItemStack stack, @Nonnull BlockState blockState) {
-        if (BlockUtil.isCrop(blockState.getBlock()) && isHoe(stack)) {
-            return true;
+    public static boolean canToolHarvest(@Nonnull ItemStack stack, @Nonnull BlockState blockState)
+    {
+        try
+        {
+            if (BlockUtil.isCrop(blockState.getBlock()) && isHoe(stack))
+            {
+                return true;
+            }
+            if (BlockUtil.isOre(blockState.getBlock()) && !isPickaxe(stack))
+            {
+                return false;
+            }
+            if (BlockUtil.isLog(blockState.getBlock()) && !isAxe(stack))
+            {
+                return false;
+            }
+            if (isTinkersTool(stack))
+            {
+                return TinkersConstructProxy.instance.canToolHarvest(stack, blockState);
+            }
+            return stack.isCorrectToolForDrops(blockState);
         }
-        if (BlockUtil.isOre(blockState.getBlock()) && !isPickaxe(stack)) {
-            return false;
+        catch (Throwable ignored)
+        {
+            // Enchanted / modded tools must never crash harvest checks.
+            return isHoe(stack) || isPickaxe(stack) || isAxe(stack) || isWeapon(stack);
         }
-        if (BlockUtil.isLog(blockState.getBlock()) && !isAxe(stack)) {
-            return false;
-        }
-        if (isTinkersTool(stack)) {
-            return TinkersConstructProxy.instance.canToolHarvest(stack, blockState);
-        }
-        return stack.isCorrectToolForDrops(blockState);
     }
 
     @Nonnull
-    public static List<Enchantment> findToolEnchantments(@Nonnull ItemStack stack) {
+    public static List<Enchantment> findToolEnchantments(@Nonnull ItemStack stack)
+    {
         List<Enchantment> enchantments = new ArrayList<>();
-        var component = stack.get(DataComponents.ENCHANTMENTS);
-        if (component == null) {
-            return enchantments;
+        try
+        {
+            var component = stack.get(DataComponents.ENCHANTMENTS);
+            if (component == null)
+            {
+                return enchantments;
+            }
+            component.entrySet().forEach(entry ->
+            {
+                if (entry.getKey() != null && entry.getKey().isBound())
+                {
+                    enchantments.add(entry.getKey().value());
+                }
+            });
         }
-        component.entrySet().forEach(entry -> enchantments.add(entry.getKey().value()));
+        catch (Throwable ignored)
+        {
+        }
         return enchantments;
     }
 
-    public static boolean damageTool(@Nonnull ItemStack stack, @Nonnull BlocklingEntity blockling, int damage) {
+    public static boolean damageTool(@Nonnull ItemStack stack, @Nonnull BlocklingEntity blockling, int damage)
+    {
+        if (stack.isEmpty() || damage <= 0)
+        {
+            return false;
+        }
+
         if (BlocklingsConfig.COMMON.abilities.enabled.get()
                 && BlocklingsConfig.COMMON.abilities.diamond.passiveEnabled.get()
                 && BlocklingAbilitySupport.hasFamily(blockling, TypeFamily.DIAMOND))
@@ -272,31 +335,43 @@ public class ToolUtil {
             return false;
         }
 
-        ItemStack copiedStack = stack.copy();
-        if (blockling.level() instanceof ServerLevel serverLevel) {
-            int newDamage = copiedStack.getDamageValue() + damage;
-            if (newDamage >= copiedStack.getMaxDamage()) {
-                copiedStack.setCount(0);
-            } else {
-                copiedStack.setDamageValue(newDamage);
-            }
+        if (!stack.isDamageableItem())
+        {
+            return false;
         }
-        stack.setDamageValue(copiedStack.getDamageValue());
-        return copiedStack.isEmpty();
+
+        // Unbreaking + Apotheosis / any modded durability enchantments.
+        int actualDamage = EnchantmentCompat.processDurabilityDamage(stack, blockling, damage);
+        if (actualDamage <= 0)
+        {
+            return false;
+        }
+
+        int newDamage = stack.getDamageValue() + actualDamage;
+        if (newDamage >= stack.getMaxDamage())
+        {
+            stack.setCount(0);
+            return true;
+        }
+
+        stack.setDamageValue(newDamage);
+        return false;
     }
 
-    private static float enchantLevel(ItemStack stack, ResourceKey<Enchantment> enchantment) {
-        var enchants = stack.getEnchantments();
-        for (Holder<Enchantment> holder : enchants.keySet()) {
-            if (holder.is(enchantment)) {
-                return enchants.getLevel(holder);
-            }
-        }
-        return 0.0f;
+    private static float enchantLevel(ItemStack stack, ResourceKey<Enchantment> enchantment)
+    {
+        return EnchantmentCompat.getLevel(stack, enchantment);
     }
 
-    private static void addEnchantment(ItemStack stack, ResourceKey<Enchantment> enchantment, int level, ServerLevel levelAccess) {
-        Holder<Enchantment> holder = levelAccess.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(enchantment);
-        EnchantmentHelper.updateEnchantments(stack, map -> map.set(holder, level));
+    private static void addEnchantment(ItemStack stack, ResourceKey<Enchantment> enchantment, int level, ServerLevel levelAccess)
+    {
+        try
+        {
+            Holder<Enchantment> holder = levelAccess.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(enchantment);
+            EnchantmentHelper.updateEnchantments(stack, map -> map.set(holder, level));
+        }
+        catch (Throwable ignored)
+        {
+        }
     }
 }

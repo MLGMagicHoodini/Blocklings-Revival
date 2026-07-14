@@ -15,7 +15,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import com.willr27.blocklings.util.Memoized;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -29,6 +28,18 @@ public class EntityUtil {
 
     @Nonnull
     public static final Memoized<Map<ResourceLocation, Entity>> VALID_ATTACK_TARGETS = Memoized.of(EntityUtil::createValidAttackTargetsMap);
+
+    /** Call after a world loads so an empty early cache can rebuild. */
+    public static void onWorldAvailable(@Nonnull Level world) {
+        latestWorld = world;
+        if (VALID_ATTACK_TARGETS.peek() == null || VALID_ATTACK_TARGETS.peek().isEmpty()) {
+            VALID_ATTACK_TARGETS.reset();
+        }
+        BlockUtil.latestWorld = world;
+        if (BlockUtil.CONTAINERS.peek() == null || BlockUtil.CONTAINERS.peek().isEmpty()) {
+            BlockUtil.CONTAINERS.reset();
+        }
+    }
 
     @Nonnull
     public static Map<ResourceLocation, Entity> createValidAttackTargetsMap() {
@@ -98,10 +109,13 @@ public class EntityUtil {
         double closestDistanceSq = Double.MAX_VALUE;
 
         Path path = entity.getNavigation().createPath(blockPos, 0);
+
         if (path != null) {
             closestPath = path;
             closestDistanceSq = BlockUtil.distanceSq(blockPos, path.getTarget());
-            if (!path.getTarget().equals(blockPos.above()) && closestDistanceSq < stopDistanceSq) {
+
+            // Accept any path that already ends within the stop distance (including blockPos.above()).
+            if (closestDistanceSq <= stopDistanceSq) {
                 return closestPath;
             } else if (stopDistanceSq != 0) {
                 closestDistanceSq = stopDistanceSq;
@@ -110,17 +124,30 @@ public class EntityUtil {
 
         for (BlockPos adjacentPos : BlockUtil.getSurroundingBlockPositions(blockPos)) {
             path = entity.getNavigation().createPath(adjacentPos, 0);
+
             if (path != null) {
                 double distanceSq = BlockUtil.distanceSq(blockPos, path.getTarget());
+
                 if (distanceSq < closestDistanceSq) {
                     closestPath = path;
                     closestDistanceSq = distanceSq;
-                    if (closestDistanceSq < stopDistanceSq) {
+
+                    if (closestDistanceSq <= stopDistanceSq) {
                         return closestPath;
                     }
                 }
             }
         }
-        return stopDistanceSq > 0 ? null : closestPath;
+
+        // Keep the best path when no stop distance is required; otherwise only if it is in range.
+        if (stopDistanceSq <= 0) {
+            return closestPath;
+        }
+
+        if (closestPath != null && BlockUtil.distanceSq(blockPos, closestPath.getTarget()) <= stopDistanceSq) {
+            return closestPath;
+        }
+
+        return null;
     }
 }

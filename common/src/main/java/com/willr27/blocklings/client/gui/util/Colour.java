@@ -112,7 +112,8 @@ public class Colour
      */
     public void apply()
     {
-        }
+        RenderSystem.setShaderColor(r, g, b, a);
+    }
 
     /**
      * Sets the colour.

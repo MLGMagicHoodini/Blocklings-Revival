@@ -24,6 +24,11 @@ public final class NetworkHandler {
     }
 
     public static void sendToServer(@Nonnull Message message) {
+        // Drop client-originated control packets for blocklings the local player does not own.
+        // These would only be rejected server-side (and spam the log).
+        if (message instanceof BlocklingMessage<?> blocklingMessage && !blocklingMessage.canSendFromCurrentSide()) {
+            return;
+        }
         Services.NETWORK.sendToServer(message);
     }
 

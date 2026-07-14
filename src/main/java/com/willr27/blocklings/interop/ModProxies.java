@@ -1,10 +1,8 @@
 package com.willr27.blocklings.interop;
 
 import com.willr27.blocklings.Blocklings;
-/*import net.minecraftforge.fml.ModList;
-import net.minecraftforge.forgespi.language.ModFileScanData;*/
-import net.neoforged.fml.ModList;
-import net.neoforged.neoforgespi.language.ModFileScanData;
+import net.minecraftforge.fml.ModList;
+import net.minecraftforge.forgespi.language.ModFileScanData;
 import org.objectweb.asm.Type;
 
 import java.lang.reflect.Field;

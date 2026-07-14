@@ -72,6 +72,7 @@ public abstract class RangeControl<T extends Number> extends Control
         this.min = min;
         this.max = max;
         this.startingValue = startingValue;
+        this.value = startingValue;
 
         setWidthPercentage(1.0);
         setFitHeightToContent(true);
@@ -238,13 +239,15 @@ public abstract class RangeControl<T extends Number> extends Control
             value = max;
         }
 
-        boolean hasValueChanged = this.value == value;
+        boolean hasValueChanged = this.value == null
+                || value == null
+                || this.value.doubleValue() != value.doubleValue();
 
         T oldValue = this.value;
 
         this.value = value;
 
-        valueFieldControl.setText(value.toString());
+        valueFieldControl.setText(formatDisplayValue(value));
 
         if (updateGrabberPosition)
         {
@@ -255,6 +258,16 @@ public abstract class RangeControl<T extends Number> extends Control
         {
             eventBus.post(this, new ValueChangedEvent(oldValue, value));
         }
+    }
+
+    @Nonnull
+    private String formatDisplayValue(@Nonnull T value)
+    {
+        if (value instanceof Float || value instanceof Double)
+        {
+            return String.format(java.util.Locale.ROOT, "%.1f", value.doubleValue());
+        }
+        return value.toString();
     }
 
     /**
