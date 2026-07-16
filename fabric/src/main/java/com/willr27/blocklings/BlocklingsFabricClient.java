@@ -2,6 +2,7 @@ package com.willr27.blocklings;
 
 import com.willr27.blocklings.client.BlocklingItemClientRegistration;
 import com.willr27.blocklings.client.gui.control.controls.config.ContainerControlEvents;
+import com.willr27.blocklings.client.gui.control.controls.config.FarmingAreaRendererFabric;
 import com.willr27.blocklings.client.gui.screen.screens.EquipmentScreen;
 import com.willr27.blocklings.client.renderer.entity.BlocklingRenderer;
 import com.willr27.blocklings.client.renderer.entity.model.BlocklingModel;
@@ -22,6 +23,7 @@ public class BlocklingsFabricClient implements ClientModInitializer {
         MenuScreens.register(BlocklingsMenus.EQUIPMENT, EquipmentScreen::new);
         BlocklingItemClientRegistration.registerItemModelsProperties();
         ContainerControlEvents.register();
+        FarmingAreaRendererFabric.register();
         FabricNetworkBridge.registerClientReceivers();
     }
 }

@@ -27,6 +27,11 @@ public final class ContainerControlEvents
         // runs, which previously left isConfiguring stuck true and blocked chest GUIs forever.
         boolean handled = ContainerControl.handleContainerSelect(event.getEntity(), true, event.getPos());
 
+        if (!handled)
+        {
+            handled = FarmingAreaSelection.handleSelect(event.getEntity(), true, event.getPos());
+        }
+
         if (handled)
         {
             event.setCanceled(true);
@@ -39,7 +44,14 @@ public final class ContainerControlEvents
     @SubscribeEvent
     public static void onPlayerContainerSelectCancel(@Nonnull PlayerInteractEvent.LeftClickBlock event)
     {
-        if (ContainerControl.handleContainerSelect(event.getEntity(), true, null))
+        boolean handled = ContainerControl.handleContainerSelect(event.getEntity(), true, null);
+
+        if (!handled)
+        {
+            handled = FarmingAreaSelection.handleSelect(event.getEntity(), true, null);
+        }
+
+        if (handled)
         {
             event.setCanceled(true);
             event.setUseBlock(TriState.FALSE);
@@ -50,6 +62,9 @@ public final class ContainerControlEvents
     @SubscribeEvent
     public static void onPlayerContainerSelectCancel(@Nonnull PlayerInteractEvent.EntityInteract event)
     {
-        ContainerControl.handleContainerSelect(event.getEntity(), true, null);
+        if (!ContainerControl.handleContainerSelect(event.getEntity(), true, null))
+        {
+            FarmingAreaSelection.handleSelect(event.getEntity(), true, null);
+        }
     }
 }

@@ -1,0 +1,211 @@
+[Mining]
+	excludedOres = []
+	additionalOres = []
+[Abilities]
+	enabled = true
+
+	[Abilities.obsidian]
+		passiveChance = 0.0
+		activeCooldownSeconds = 120
+		activeEnabled = true
+		passiveEnabled = true
+		activeDurationSeconds = 20
+		radius = 6
+	[Abilities.dirt]
+		passiveChance = 0.33
+		activeCooldownSeconds = 60
+		activeEnabled = true
+		passiveEnabled = true
+		activeDurationSeconds = 20
+		radius = 3
+	[Abilities.quartz]
+		passiveChance = 0.0
+		activeCooldownSeconds = 60
+		activeEnabled = true
+		passiveEnabled = true
+		activeDurationSeconds = 20
+		radius = 6
+	[Abilities.glowstone]
+		passiveChance = 0.0
+		activeCooldownSeconds = 60
+		activeEnabled = true
+		passiveEnabled = true
+		activeDurationSeconds = 20
+		radius = 8
+	[Abilities.stone]
+		passiveChance = 0.0
+		activeCooldownSeconds = 120
+		activeEnabled = true
+		passiveEnabled = true
+		activeDurationSeconds = 20
+		radius = 8
+	[Abilities.netherite]
+		passiveChance = 0.0
+		activeCooldownSeconds = 180
+		activeEnabled = true
+		passiveEnabled = true
+		activeDurationSeconds = 20
+		radius = 8
+	[Abilities.gold]
+		passiveChance = 0.1
+		activeCooldownSeconds = 90
+		activeEnabled = true
+		passiveEnabled = true
+		activeDurationSeconds = 20
+		radius = 8
+	[Abilities.diamond]
+		passiveChance = 0.0
+		activeCooldownSeconds = 120
+		activeEnabled = true
+		passiveEnabled = true
+		activeDurationSeconds = 20
+		radius = 8
+	[Abilities.grass]
+		passiveChance = 0.33
+		activeCooldownSeconds = 60
+		activeEnabled = true
+		passiveEnabled = true
+		activeDurationSeconds = 20
+		radius = 3
+	[Abilities.iron]
+		passiveChance = 0.0
+		activeCooldownSeconds = 60
+		activeEnabled = true
+		passiveEnabled = true
+		activeDurationSeconds = 20
+		radius = 4
+	[Abilities.wood]
+		passiveChance = 0.15
+		activeCooldownSeconds = 90
+		activeEnabled = true
+		passiveEnabled = true
+		activeDurationSeconds = 20
+		radius = 4
+	[Abilities.lapis]
+		passiveChance = 0.0
+		activeCooldownSeconds = 90
+		activeEnabled = true
+		passiveEnabled = true
+		activeDurationSeconds = 20
+		radius = 8
+	[Abilities.emerald]
+		passiveChance = 0.05
+		activeCooldownSeconds = 90
+		activeEnabled = true
+		passiveEnabled = true
+		activeDurationSeconds = 20
+		radius = 8
+[Woodcutting]
+	customTrees = []
+	defaultMinLeavesToLogRatio = 1.0
+[Misc]
+	disableDirtyBlocklings = true
+#Food-based type upgrade chances (original Blocklings defaults: 0.25).
+[Upgrade]
+	evolveSuccessChance = 0.25
+	primaryTypeChangeChance = 0.25
+#Natural/chunk spawn tuning.
+[Spawn]
+	nearbyCap = 6
+	nearbyRadius = 40.0
+	starterSpawnRadius = 12
+	starterSpawnDelayTicks = 40
+	starterSpawnEnabled = true
+	enabled = true
+	preventDuplicateNearbyType = false
+	starterSpawnCount = 5
+
+	[Spawn.types]
+		[Spawn.types.dark_oak_log]
+			extraBiomes = []
+			biomeMode = "AND"
+			spawnWeight = 100
+			enabled = true
+		[Spawn.types.obsidian]
+			extraBiomes = []
+			biomeMode = "AND"
+			spawnWeight = 100
+			enabled = true
+		[Spawn.types.dirt]
+			extraBiomes = []
+			biomeMode = "AND"
+			spawnWeight = 100
+			enabled = true
+		[Spawn.types.quartz]
+			extraBiomes = []
+			biomeMode = "AND"
+			spawnWeight = 100
+			enabled = true
+		[Spawn.types.glowstone]
+			extraBiomes = []
+			biomeMode = "AND"
+			spawnWeight = 100
+			enabled = true
+		[Spawn.types.stone]
+			extraBiomes = []
+			biomeMode = "AND"
+			spawnWeight = 100
+			enabled = true
+		[Spawn.types.netherite]
+			extraBiomes = []
+			biomeMode = "AND"
+			spawnWeight = 100
+			enabled = true
+		[Spawn.types.gold]
+			extraBiomes = []
+			biomeMode = "AND"
+			spawnWeight = 100
+			enabled = true
+		[Spawn.types.diamond]
+			extraBiomes = []
+			biomeMode = "AND"
+			spawnWeight = 100
+			enabled = true
+		[Spawn.types.oak_log]
+			extraBiomes = []
+			biomeMode = "AND"
+			spawnWeight = 100
+			enabled = true
+		[Spawn.types.grass]
+			extraBiomes = []
+			biomeMode = "AND"
+			spawnWeight = 33
+			enabled = true
+		[Spawn.types.acacia_log]
+			extraBiomes = []
+			biomeMode = "AND"
+			spawnWeight = 100
+			enabled = true
+		[Spawn.types.jungle_log]
+			extraBiomes = []
+			biomeMode = "AND"
+			spawnWeight = 100
+			enabled = true
+		[Spawn.types.iron]
+			extraBiomes = []
+			biomeMode = "AND"
+			spawnWeight = 100
+			enabled = true
+		[Spawn.types.lapis]
+			extraBiomes = []
+			biomeMode = "AND"
+			spawnWeight = 100
+			enabled = true
+		[Spawn.types.spruce_log]
+			extraBiomes = []
+			biomeMode = "AND"
+			spawnWeight = 100
+			enabled = true
+		[Spawn.types.emerald]
+			extraBiomes = []
+			biomeMode = "AND"
+			spawnWeight = 100
+			enabled = true
+		[Spawn.types.birch_log]
+			extraBiomes = []
+			biomeMode = "AND"
+			spawnWeight = 100
+			enabled = true
+[Farming]
+	additionalCrops = []
+	excludedCrops = []

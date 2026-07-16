@@ -55,7 +55,7 @@ public final class FabricConfigBridge {
         putIfAbsent(config, "Spawn.nearbyCap", 6);
         putIfAbsent(config, "Spawn.nearbyRadius", 40.0D);
         putIfAbsent(config, "Spawn.preventDuplicateNearbyType", false);
-        putIfAbsent(config, "Spawn.starterSpawnEnabled", true);
+        putIfAbsent(config, "Spawn.starterSpawnEnabled", false);
         putIfAbsent(config, "Spawn.starterSpawnCount", 5);
         putIfAbsent(config, "Spawn.starterSpawnRadius", 12);
         putIfAbsent(config, "Spawn.starterSpawnDelayTicks", 40);
@@ -127,7 +127,7 @@ public final class FabricConfigBridge {
         spawn.nearbyCap = () -> config.getOrElse("Spawn.nearbyCap", 6);
         spawn.nearbyRadius = () -> config.getOrElse("Spawn.nearbyRadius", 40.0D);
         spawn.preventDuplicateNearbyType = () -> config.getOrElse("Spawn.preventDuplicateNearbyType", false);
-        spawn.starterSpawnEnabled = () -> config.getOrElse("Spawn.starterSpawnEnabled", true);
+        spawn.starterSpawnEnabled = () -> config.getOrElse("Spawn.starterSpawnEnabled", false);
         spawn.starterSpawnCount = () -> config.getOrElse("Spawn.starterSpawnCount", 5);
         spawn.starterSpawnRadius = () -> config.getOrElse("Spawn.starterSpawnRadius", 12);
         spawn.starterSpawnDelayTicks = () -> config.getOrElse("Spawn.starterSpawnDelayTicks", 40);

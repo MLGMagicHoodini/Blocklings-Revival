@@ -15,6 +15,9 @@ public final class ContainerControlEvents {
             if (ContainerControl.handleContainerSelect(player, true, hitResult.getBlockPos())) {
                 return InteractionResult.SUCCESS;
             }
+            if (FarmingAreaSelection.handleSelect(player, true, hitResult.getBlockPos())) {
+                return InteractionResult.SUCCESS;
+            }
             return InteractionResult.PASS;
         });
 
@@ -22,11 +25,16 @@ public final class ContainerControlEvents {
             if (ContainerControl.handleContainerSelect(player, true, null)) {
                 return InteractionResult.FAIL;
             }
+            if (FarmingAreaSelection.handleSelect(player, true, null)) {
+                return InteractionResult.FAIL;
+            }
             return InteractionResult.PASS;
         });
 
         UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
-            ContainerControl.handleContainerSelect(player, true, null);
+            if (!ContainerControl.handleContainerSelect(player, true, null)) {
+                FarmingAreaSelection.handleSelect(player, true, null);
+            }
             return InteractionResult.PASS;
         });
     }

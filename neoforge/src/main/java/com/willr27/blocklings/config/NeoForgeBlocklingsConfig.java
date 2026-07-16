@@ -235,7 +235,7 @@ public class NeoForgeBlocklingsConfig
             starterSpawnEnabled = builder
                     .comment("Spawn a one-time pack of wild blocklings near each player on first join.",
                             "Does not repeat when the player reconnects.")
-                    .define("starterSpawnEnabled", true);
+                    .define("starterSpawnEnabled", false);
 
             starterSpawnCount = builder
                     .comment("How many wild blocklings to spawn in the starter pack.")
