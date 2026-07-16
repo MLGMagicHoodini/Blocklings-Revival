@@ -9,6 +9,7 @@ import com.willr27.blocklings.entity.blockling.goal.goals.combat.BlocklingMeleeA
 import com.willr27.blocklings.entity.blockling.goal.goals.combat.BlocklingMeleeAttackHurtByGoal;
 import com.willr27.blocklings.entity.blockling.goal.goals.combat.BlocklingMeleeAttackOwnerHurtByGoal;
 import com.willr27.blocklings.entity.blockling.goal.goals.combat.BlocklingMeleeAttackOwnerHurtGoal;
+import com.willr27.blocklings.entity.blockling.goal.goals.container.BlocklingContainerGoal;
 import com.willr27.blocklings.entity.blockling.goal.goals.container.BlocklingDepositContainerGoal;
 import com.willr27.blocklings.entity.blockling.goal.goals.container.BlocklingTakeContainerGoal;
 import com.willr27.blocklings.entity.blockling.goal.goals.gather.BlocklingFarmGoal;
@@ -18,6 +19,7 @@ import com.willr27.blocklings.entity.blockling.goal.goals.misc.BlocklingFindBloc
 import com.willr27.blocklings.entity.blockling.goal.goals.misc.BlocklingFollowGoal;
 import com.willr27.blocklings.entity.blockling.goal.goals.misc.BlocklingSitGoal;
 import com.willr27.blocklings.entity.blockling.goal.goals.misc.BlocklingWanderGoal;
+import com.willr27.blocklings.entity.blockling.skill.skills.GeneralSkills;
 import com.willr27.blocklings.entity.blockling.task.config.Property;
 import com.willr27.blocklings.entity.blockling.goal.config.whitelist.GoalWhitelist;
 import com.willr27.blocklings.network.messages.TaskCreateMessage;
@@ -135,28 +137,84 @@ public class BlocklingTasks implements IReadWriteNBT
      */
     public void reapplyGoals()
     {
-        Set<WrappedGoal> goals = ReflectionHelper.getPrivateValue(GoalSelector.class, goalSelector, "availableGoals");
-        Set<WrappedGoal> targets = ReflectionHelper.getPrivateValue(GoalSelector.class, targetSelector, "availableGoals");
+        // Public API — works on NeoForge (named) and Fabric (intermediary remapped).
+        Set<WrappedGoal> goals = goalSelector.getAvailableGoals();
+        Set<WrappedGoal> targets = targetSelector.getAvailableGoals();
         goals.forEach(WrappedGoal::stop);
         goals.clear();
         targets.forEach(WrappedGoal::stop);
         targets.clear();
 
-        Map<Goal.Flag, WrappedGoal> goalLockedFlags  = ReflectionHelper.getPrivateValue(GoalSelector.class, goalSelector, "lockedFlags");
-        Map<Goal.Flag, WrappedGoal> targetLockedFlags  = ReflectionHelper.getPrivateValue(GoalSelector.class, targetSelector, "lockedFlags");
+        // lockedFlags is private; try Mojang + intermediary + yarn names.
+        Map<Goal.Flag, WrappedGoal> goalLockedFlags = ReflectionHelper.getPrivateValue(
+                GoalSelector.class, goalSelector, "lockedFlags", "field_18411", "goalsByControl");
+        Map<Goal.Flag, WrappedGoal> targetLockedFlags = ReflectionHelper.getPrivateValue(
+                GoalSelector.class, targetSelector, "lockedFlags", "field_18411", "goalsByControl");
         goalLockedFlags.clear();
         targetLockedFlags.clear();
 
         goalSelector.addGoal(0, new FloatGoal(blockling));
 
+        // Sit must always outrank MOVE goals (woodcut/wander/follow). Task-list order alone
+        // is not enough — a higher-list woodcut would lock MOVE before Sit could start.
+        int nextPriority = 1;
         for (Task task : prioritisedTasks)
         {
-            if (!task.isConfigured())
+            if (task.isConfigured() && task.getType() == SIT && task.getGoal() != null)
+            {
+                goalSelector.addGoal(nextPriority++, task.getGoal());
+            }
+        }
+
+        // Work / combat / container goals next — before Follow/Wander so a hunt/mine target
+        // a few blocks away is not constantly interrupted by Follow (legacy 1.18 stutter).
+        for (Task task : prioritisedTasks)
+        {
+            if (!task.isConfigured() || task.getGoal() == null)
             {
                 continue;
             }
 
-            goalSelector.addGoal(task.getPriority(), task.getGoal());
+            TaskType type = task.getType();
+            if (type == SIT || type == FOLLOW || type == WANDER)
+            {
+                continue;
+            }
+
+            goalSelector.addGoal(nextPriority++, task.getGoal());
+        }
+
+        for (Task task : prioritisedTasks)
+        {
+            if (task.isConfigured() && task.getType() == FOLLOW && task.getGoal() != null)
+            {
+                goalSelector.addGoal(nextPriority++, task.getGoal());
+            }
+        }
+
+        for (Task task : prioritisedTasks)
+        {
+            if (task.isConfigured() && task.getType() == WANDER && task.getGoal() != null)
+            {
+                goalSelector.addGoal(nextPriority++, task.getGoal());
+            }
+        }
+    }
+
+    /**
+     * Re-applies task properties that depend on bought skills.
+     * Needed because tasks are loaded/decoded before skills.
+     */
+    public void refreshSkillGatedProperties()
+    {
+        boolean advancedCourier = blockling.getSkills().getSkill(GeneralSkills.ADVANCED_COURIER).isBought();
+
+        for (Task task : getPrioritisedTasks())
+        {
+            if (task.isConfigured() && task.getGoal() instanceof BlocklingContainerGoal)
+            {
+                ((BlocklingContainerGoal) task.getGoal()).itemConfigurationTypeProperty.setEnabled(advancedCourier, false);
+            }
         }
     }
 
@@ -382,6 +440,24 @@ public class BlocklingTasks implements IReadWriteNBT
     public TaskList getPrioritisedTasks()
     {
         return prioritisedTasks;
+    }
+
+    /**
+     * @return true if the blockling has a Follow task that is configured and not disabled — i.e. the
+     *         owner wants it to stay with them. Used to leash gather/work targets near the owner so
+     *         it does not wander tree-to-tree across the map instead of coming back.
+     */
+    public boolean hasEnabledFollowTask()
+    {
+        for (Task task : prioritisedTasks)
+        {
+            if (task.isConfigured() && task.getType() == FOLLOW && task.getGoal() != null
+                    && task.getGoal().getState() != com.willr27.blocklings.entity.blockling.goal.BlocklingGoal.State.DISABLED)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     public Task getTask(UUID id)

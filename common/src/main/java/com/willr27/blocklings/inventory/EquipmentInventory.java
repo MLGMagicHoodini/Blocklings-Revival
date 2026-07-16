@@ -196,6 +196,26 @@ public class EquipmentInventory extends AbstractInventory
     }
 
     /**
+     * Non-mutating check: any slot (hands or backpack) holds a tool that can harvest {@code blockState}.
+     */
+    public boolean hasInventoryToolThatCanHarvest(@Nonnull ToolType toolType, @Nonnull BlockState blockState)
+    {
+        for (int i = 0; i < getContainerSize(); i++)
+        {
+            ItemStack stack = getItem(i);
+            if (stack.isEmpty())
+            {
+                continue;
+            }
+            if ((toolType.is(stack) || ToolUtil.isTool(stack)) && ToolUtil.canToolHarvest(stack, blockState))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * @return true if the blockling can harvest the given block with the current tool in the given InteractionHand.
      */
     public boolean canHarvestBlockWithEquippedTool(@Nonnull InteractionHand InteractionHand, @Nonnull BlockState blockState)

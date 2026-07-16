@@ -7,12 +7,12 @@ import com.willr27.blocklings.entity.blockling.task.Task;
 import com.willr27.blocklings.network.BlocklingMessage;
 import com.willr27.blocklings.util.IReadWriteNBT;
 import com.willr27.blocklings.util.Version;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.player.Player;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.network.PacketBuffer;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -40,13 +40,13 @@ public abstract class Property implements IReadWriteNBT
      * The name of the property.
      */
     @Nonnull
-    public final Component name;
+    public final ITextComponent name;
 
     /**
      * The description of the property.
      */
     @Nonnull
-    public final Component desc;
+    public final ITextComponent desc;
 
     /**
      * Whether the property is enabled.
@@ -59,7 +59,7 @@ public abstract class Property implements IReadWriteNBT
      * @param name the name of the property.
      * @param desc the description of the property.
      */
-    public Property(@Nonnull String id, @Nonnull BlocklingGoal goal, @Nonnull Component name, @Nonnull Component desc)
+    public Property(@Nonnull String id, @Nonnull BlocklingGoal goal, @Nonnull ITextComponent name, @Nonnull ITextComponent desc)
     {
         this.id = UUID.fromString(id);
         this.goal = goal;
@@ -68,7 +68,7 @@ public abstract class Property implements IReadWriteNBT
     }
 
     @Override
-    public CompoundTag writeToNBT(@Nonnull CompoundTag propertyTag)
+    public CompoundNBT writeToNBT(@Nonnull CompoundNBT propertyTag)
     {
         propertyTag.putUUID("id", id);
         propertyTag.putBoolean("is_enabled", isEnabled);
@@ -77,7 +77,7 @@ public abstract class Property implements IReadWriteNBT
     }
 
     @Override
-    public void readFromNBT(@Nonnull CompoundTag propertyTag, @Nonnull Version tagVersion)
+    public void readFromNBT(@Nonnull CompoundNBT propertyTag, @Nonnull Version tagVersion)
     {
         setEnabled(propertyTag.getBoolean("is_enabled"), false);
     }
@@ -87,7 +87,7 @@ public abstract class Property implements IReadWriteNBT
      *
      * @param buf the buffer to encode to.
      */
-    public void encode(@Nonnull FriendlyByteBuf buf)
+    public void encode(@Nonnull PacketBuffer buf)
     {
         buf.writeBoolean(isEnabled);
     }
@@ -97,7 +97,7 @@ public abstract class Property implements IReadWriteNBT
      *
      * @param buf the buffer to decode from.
      */
-    public void decode(@Nonnull FriendlyByteBuf buf)
+    public void decode(@Nonnull PacketBuffer buf)
     {
         setEnabled(buf.readBoolean(), false);
     }
@@ -152,7 +152,7 @@ public abstract class Property implements IReadWriteNBT
          * The remaining buffer used to pass to the property to decode.
          */
         @Nullable
-        private FriendlyByteBuf buf;
+        private PacketBuffer buf;
 
         /**
          * The property (could be null on the receiving end if the client and server are no synced).
@@ -189,7 +189,7 @@ public abstract class Property implements IReadWriteNBT
         }
 
         @Override
-        public void encode(@Nonnull FriendlyByteBuf buf)
+        public void encode(@Nonnull PacketBuffer buf)
         {
             super.encode(buf);
 
@@ -200,7 +200,7 @@ public abstract class Property implements IReadWriteNBT
         }
 
         @Override
-        public void decode(@Nonnull FriendlyByteBuf buf)
+        public void decode(@Nonnull PacketBuffer buf)
         {
             super.decode(buf);
 
@@ -211,7 +211,7 @@ public abstract class Property implements IReadWriteNBT
         }
 
         @Override
-        protected void handle(@Nonnull Player player, @Nonnull BlocklingEntity blockling)
+        protected void handle(@Nonnull PlayerEntity player, @Nonnull BlocklingEntity blockling)
         {
             Task task = blockling.getTasks().getTask(taskId);
 

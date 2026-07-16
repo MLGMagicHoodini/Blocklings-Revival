@@ -2,11 +2,15 @@ package com.willr27.blocklings.util;
 
 import com.willr27.blocklings.Blocklings;
 import com.willr27.blocklings.config.BlocklingsConfig;
+import com.willr27.blocklings.platform.Services;
+import net.minecraft.world.Container;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
@@ -33,7 +37,15 @@ public class BlockUtil
     @Nullable
     public static Level latestWorld;
 
-    private static final TagKey<Block> ORES_TAG = TagKey.create(Registries.BLOCK, ResourceLocation.withDefaultNamespace("ores"));
+    /**
+     * NeoForge / Fabric common ores tag ({@code #c:ores}). {@code #minecraft:ores} is empty in 1.21+.
+     */
+    private static final TagKey<Block> ORES_TAG_C = TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath("c", "ores"));
+
+    /**
+     * Legacy vanilla-style tag (kept as secondary source).
+     */
+    private static final TagKey<Block> ORES_TAG_MC = TagKey.create(Registries.BLOCK, ResourceLocation.withDefaultNamespace("ores"));
 
     /**
      * The list of blocks that are considered containers.
@@ -47,12 +59,46 @@ public class BlockUtil
     @Nonnull
     public static List<Block> createContainersList()
     {
-        Blocklings.LOGGER.info("Creating valid containers set (deferred capability scan).");
-        return new ArrayList<>();
+        Blocklings.LOGGER.info("Creating valid containers set.");
+
+        List<Block> containers = new ArrayList<>();
+
+        for (Block block : BuiltInRegistries.BLOCK)
+        {
+            if (!(block instanceof EntityBlock entityBlock))
+            {
+                continue;
+            }
+
+            BlockState state = block.defaultBlockState();
+            if (!state.hasBlockEntity())
+            {
+                continue;
+            }
+
+            BlockEntity blockEntity;
+            try
+            {
+                blockEntity = entityBlock.newBlockEntity(BlockPos.ZERO, state);
+            }
+            catch (Exception ignored)
+            {
+                continue;
+            }
+
+            // Vanilla / most modded inventories implement Container on the block entity.
+            if (blockEntity instanceof Container)
+            {
+                containers.add(block);
+            }
+        }
+
+        Blocklings.LOGGER.info("Found {} container blocks.", containers.size());
+        return containers;
     }
 
     /**
-     * Checks if the given block is a container.
+     * Checks if the given block type is a known container (for search UI).
      *
      * @param block the block to check.
      * @return true if the block is a container, false otherwise.
@@ -60,6 +106,28 @@ public class BlockUtil
     public static boolean isContainer(@Nonnull Block block)
     {
         return CONTAINERS.get().contains(block);
+    }
+
+    /**
+     * Checks if the block at the given position can accept items (world selection / goals).
+     */
+    public static boolean isContainer(@Nonnull Level level, @Nonnull BlockPos pos)
+    {
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity == null)
+        {
+            return false;
+        }
+
+        for (Direction direction : Direction.values())
+        {
+            if (Services.INVENTORY.getItemHandler(level, pos, blockEntity, direction) != null)
+            {
+                return true;
+            }
+        }
+
+        return blockEntity instanceof Container || isContainer(level.getBlockState(pos).getBlock());
     }
 
     /**
@@ -81,18 +149,14 @@ public class BlockUtil
         List<? extends String> additionalBlocks = BlocklingsConfig.COMMON.additionalOres.get();
         List<? extends String> excludedBlocks = BlocklingsConfig.COMMON.excludedOres.get();
 
-        ores.clear();
+        addOresFromTag(ores, ORES_TAG_C, excludedBlocks);
+        addOresFromTag(ores, ORES_TAG_MC, excludedBlocks);
 
-        BuiltInRegistries.BLOCK.getTagOrEmpty(ORES_TAG).forEach(holder ->
+        // Tags may not be bound yet (or #minecraft:ores is empty in 1.21) — keep vanilla ores playable.
+        if (ores.isEmpty())
         {
-            Block block = holder.value();
-            if (excludedBlocks.contains(RegistryUtil.blockId(block).toString()))
-            {
-                return;
-            }
-
-            ores.add(block);
-        });
+            addVanillaOreFallbacks(ores, excludedBlocks);
+        }
 
         for (String entry : additionalBlocks)
         {
@@ -117,7 +181,46 @@ public class BlockUtil
             ores.add(block);
         }
 
+        Blocklings.LOGGER.info("Ores list size: " + ores.size());
         return ores;
+    }
+
+    private static void addOresFromTag(@Nonnull Set<Block> ores, @Nonnull TagKey<Block> tag, @Nonnull List<? extends String> excludedBlocks)
+    {
+        BuiltInRegistries.BLOCK.getTagOrEmpty(tag).forEach(holder ->
+        {
+            Block block = holder.value();
+            if (excludedBlocks.contains(RegistryUtil.blockId(block).toString()))
+            {
+                return;
+            }
+
+            ores.add(block);
+        });
+    }
+
+    private static void addVanillaOreFallbacks(@Nonnull Set<Block> ores, @Nonnull List<? extends String> excludedBlocks)
+    {
+        Block[] fallbacks = new Block[]
+        {
+            Blocks.COAL_ORE, Blocks.DEEPSLATE_COAL_ORE,
+            Blocks.IRON_ORE, Blocks.DEEPSLATE_IRON_ORE,
+            Blocks.COPPER_ORE, Blocks.DEEPSLATE_COPPER_ORE,
+            Blocks.GOLD_ORE, Blocks.DEEPSLATE_GOLD_ORE, Blocks.NETHER_GOLD_ORE,
+            Blocks.REDSTONE_ORE, Blocks.DEEPSLATE_REDSTONE_ORE,
+            Blocks.EMERALD_ORE, Blocks.DEEPSLATE_EMERALD_ORE,
+            Blocks.LAPIS_ORE, Blocks.DEEPSLATE_LAPIS_ORE,
+            Blocks.DIAMOND_ORE, Blocks.DEEPSLATE_DIAMOND_ORE,
+            Blocks.NETHER_QUARTZ_ORE, Blocks.ANCIENT_DEBRIS
+        };
+
+        for (Block block : fallbacks)
+        {
+            if (!excludedBlocks.contains(RegistryUtil.blockId(block).toString()))
+            {
+                ores.add(block);
+            }
+        }
     }
 
     /**
@@ -127,6 +230,67 @@ public class BlockUtil
     public static boolean isOre(@Nonnull Block block)
     {
         return ORES.get().contains(block);
+    }
+
+    /**
+     * Soft stone the miner may dig to reach ores (not a whitelist property — tunnel only).
+     */
+    public static boolean isTunnelStone(@Nonnull Block block)
+    {
+        BlockState state = block.defaultBlockState();
+        if (state.is(BlockTags.BASE_STONE_OVERWORLD) || state.is(BlockTags.BASE_STONE_NETHER))
+        {
+            return true;
+        }
+
+        return block == Blocks.COBBLESTONE
+                || block == Blocks.COBBLED_DEEPSLATE
+                || block == Blocks.MOSSY_COBBLESTONE
+                || block == Blocks.TUFF
+                || block == Blocks.CALCITE
+                || block == Blocks.DRIPSTONE_BLOCK
+                || block == Blocks.SMOOTH_BASALT
+                || block == Blocks.MAGMA_BLOCK;
+    }
+
+    /**
+     * Ore whitelist siblings so disabling iron also disables deepslate iron (and vice versa).
+     */
+    @Nonnull
+    public static List<ResourceLocation> oreWhitelistGroup(@Nonnull ResourceLocation id)
+    {
+        String path = id.getPath();
+        String namespace = id.getNamespace();
+        List<ResourceLocation> group = new ArrayList<>();
+        group.add(id);
+
+        if (path.startsWith("deepslate_") && path.endsWith("_ore"))
+        {
+            group.add(ResourceLocation.fromNamespaceAndPath(namespace, path.substring("deepslate_".length())));
+        }
+        else if (path.endsWith("_ore") && !path.startsWith("deepslate_") && !path.startsWith("nether_"))
+        {
+            group.add(ResourceLocation.fromNamespaceAndPath(namespace, "deepslate_" + path));
+        }
+        else if (path.equals("nether_gold_ore"))
+        {
+            group.add(ResourceLocation.fromNamespaceAndPath(namespace, "gold_ore"));
+            group.add(ResourceLocation.fromNamespaceAndPath(namespace, "deepslate_gold_ore"));
+        }
+        else if (path.equals("gold_ore") || path.equals("deepslate_gold_ore"))
+        {
+            group.add(ResourceLocation.fromNamespaceAndPath(namespace, "nether_gold_ore"));
+            if (path.equals("gold_ore"))
+            {
+                group.add(ResourceLocation.fromNamespaceAndPath(namespace, "deepslate_gold_ore"));
+            }
+            else
+            {
+                group.add(ResourceLocation.fromNamespaceAndPath(namespace, "gold_ore"));
+            }
+        }
+
+        return group;
     }
 
     /**
@@ -430,6 +594,14 @@ public class BlockUtil
     }
 
     /**
+     * Dark oak (and similar) saplings only grow as a 2x2; a single sapling can still be placed.
+     */
+    public static boolean requiresTwoByTwoSaplings(@Nonnull Block sapling)
+    {
+        return sapling == Blocks.DARK_OAK_SAPLING;
+    }
+
+    /**
      * The list of blocks that are considered crops.
      */
     @Nonnull
@@ -453,6 +625,8 @@ public class BlockUtil
         crops.add(Blocks.POTATOES);
         crops.add(Blocks.PUMPKIN);
         crops.add(Blocks.MELON);
+        crops.add(Blocks.TORCHFLOWER_CROP);
+        crops.add(Blocks.PITCHER_CROP);
 
         for (String additionalString : BlocklingsConfig.COMMON.additionalCrops.get())
         {
@@ -488,12 +662,164 @@ public class BlockUtil
     }
 
     /**
+     * Resolves the seed/item used to plant a crop block.
+     * Crop blocks often have {@code asItem() == AIR}; use this for whitelist icons and planting.
+     */
+    @Nonnull
+    public static Item getCropSeedItem(@Nonnull Block crop)
+    {
+        // Prefer explicit vanilla mapping — getCloneItemStack(null, ...) is unreliable for GUI.
+        if (crop == Blocks.WHEAT)
+        {
+            return Items.WHEAT_SEEDS;
+        }
+        if (crop == Blocks.BEETROOTS)
+        {
+            return Items.BEETROOT_SEEDS;
+        }
+        if (crop == Blocks.CARROTS)
+        {
+            return Items.CARROT;
+        }
+        if (crop == Blocks.POTATOES)
+        {
+            return Items.POTATO;
+        }
+        if (crop == Blocks.PUMPKIN || crop == Blocks.PUMPKIN_STEM || crop == Blocks.ATTACHED_PUMPKIN_STEM)
+        {
+            return Items.PUMPKIN_SEEDS;
+        }
+        if (crop == Blocks.MELON || crop == Blocks.MELON_STEM || crop == Blocks.ATTACHED_MELON_STEM)
+        {
+            return Items.MELON_SEEDS;
+        }
+        if (crop == Blocks.TORCHFLOWER_CROP || crop == Blocks.TORCHFLOWER)
+        {
+            return Items.TORCHFLOWER_SEEDS;
+        }
+        if (crop == Blocks.PITCHER_CROP || crop == Blocks.PITCHER_PLANT)
+        {
+            return Items.PITCHER_POD;
+        }
+
+        Item asItem = crop.asItem();
+        if (asItem != null && asItem != Items.AIR)
+        {
+            return asItem;
+        }
+
+        if (crop instanceof net.minecraft.world.level.block.CropBlock cropBlock)
+        {
+            try
+            {
+                ItemStack seed = cropBlock.getCloneItemStack(null, BlockPos.ZERO, crop.defaultBlockState());
+                if (!seed.isEmpty() && seed.getItem() != Items.AIR)
+                {
+                    return seed.getItem();
+                }
+            }
+            catch (Exception ignored)
+            {
+            }
+        }
+
+        return Items.AIR;
+    }
+
+    /**
+     * Resolves the block that should be placed when planting the given seed/item.
+     * Pumpkin/melon seeds place stems; crop fruit blocks are not plantable directly.
+     *
+     * @return the plant block, or {@link Blocks#AIR} if the item is not a farm seed.
+     */
+    @Nonnull
+    public static Block getPlantBlockForSeed(@Nonnull Item seed)
+    {
+        if (seed == Items.AIR)
+        {
+            return Blocks.AIR;
+        }
+
+        if (seed == Items.WHEAT_SEEDS)
+        {
+            return Blocks.WHEAT;
+        }
+        if (seed == Items.BEETROOT_SEEDS)
+        {
+            return Blocks.BEETROOTS;
+        }
+        if (seed == Items.CARROT)
+        {
+            return Blocks.CARROTS;
+        }
+        if (seed == Items.POTATO)
+        {
+            return Blocks.POTATOES;
+        }
+        if (seed == Items.PUMPKIN_SEEDS)
+        {
+            return Blocks.PUMPKIN_STEM;
+        }
+        if (seed == Items.MELON_SEEDS)
+        {
+            return Blocks.MELON_STEM;
+        }
+        if (seed == Items.TORCHFLOWER_SEEDS)
+        {
+            return Blocks.TORCHFLOWER_CROP;
+        }
+        if (seed == Items.PITCHER_POD)
+        {
+            return Blocks.PITCHER_CROP;
+        }
+
+        Block byItem = Block.byItem(seed);
+        if (byItem != Blocks.AIR)
+        {
+            if (byItem instanceof net.minecraft.world.level.block.CropBlock
+                    || byItem instanceof net.minecraft.world.level.block.StemBlock
+                    || byItem instanceof net.minecraft.world.level.block.PitcherCropBlock
+                    || isCrop(byItem))
+            {
+                return byItem;
+            }
+        }
+
+        // Reverse lookup via known crop → seed mapping (handles config-added crops).
+        for (Block crop : CROPS.get())
+        {
+            if (getCropSeedItem(crop) == seed)
+            {
+                if (crop == Blocks.PUMPKIN)
+                {
+                    return Blocks.PUMPKIN_STEM;
+                }
+                if (crop == Blocks.MELON)
+                {
+                    return Blocks.MELON_STEM;
+                }
+                return crop;
+            }
+        }
+
+        return Blocks.AIR;
+    }
+
+    /**
+     * @return true if the item can be planted on farmland by a farming blockling.
+     */
+    public static boolean isPlantableFarmSeed(@Nonnull Item item)
+    {
+        return getPlantBlockForSeed(item) != Blocks.AIR;
+    }
+
+    /**
      * @param blockItem a block in item form.
      * @return true if the block item is a crop.
      */
     public static boolean isCrop(@Nonnull Item blockItem)
     {
-        return getCrop(blockItem) != null;
+        return getCrop(blockItem) != null || getPlantBlockForSeed(blockItem) != Blocks.AIR;
     }
 
     /**
@@ -505,9 +831,15 @@ public class BlockUtil
     @Nullable
     public static Block getCrop(@Nonnull Item blockItem)
     {
+        Block planted = getPlantBlockForSeed(blockItem);
+        if (planted != Blocks.AIR)
+        {
+            return planted;
+        }
+
         for (Block crop : CROPS.get())
         {
-            if (new ItemStack(crop).getItem() == blockItem)
+            if (getCropSeedItem(crop) == blockItem)
             {
                 return crop;
             }

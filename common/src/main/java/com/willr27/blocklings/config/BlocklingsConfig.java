@@ -32,14 +32,42 @@ public final class BlocklingsConfig
         public Supplier<List<? extends String>> additionalCrops = ArrayList::new;
         public Supplier<List<? extends String>> excludedCrops = ArrayList::new;
 
+        /** Chance (0–1) that crouch+food evolves the natural type. Default matches original 25%. */
+        public Supplier<Double> evolveSuccessChance = () -> 0.25D;
+
+        /** Chance (0–1) that food without crouch changes the primary type. Default 25%. */
+        public Supplier<Double> primaryTypeChangeChance = () -> 0.25D;
+
         @Nonnull
         public final BlocklingAbilityConfig abilities = new BlocklingAbilityConfig();
+
+        @Nonnull
+        public final BlocklingSpawnConfig spawn = new BlocklingSpawnConfig();
 
         public double minLeavesToLogRatio()
         {
             double value = defaultMinLeavesToLogRatio.get();
             return Math.max(BlocklingWoodcutGoal.MIN_MIN_LEAVES_TO_LOGS_RATIO,
                     Math.min(BlocklingWoodcutGoal.MAX_MIN_LEAVES_TO_LOGS_RATIO, value));
+        }
+
+        public double evolveChance()
+        {
+            return clamp01(evolveSuccessChance.get());
+        }
+
+        public double primaryChangeChance()
+        {
+            return clamp01(primaryTypeChangeChance.get());
+        }
+
+        private static double clamp01(double value)
+        {
+            if (Double.isNaN(value))
+            {
+                return 0.0D;
+            }
+            return Math.max(0.0D, Math.min(1.0D, value));
         }
     }
 

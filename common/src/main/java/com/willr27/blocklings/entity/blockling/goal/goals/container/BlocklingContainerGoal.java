@@ -16,33 +16,43 @@ import com.willr27.blocklings.client.gui.texture.Textures;
 import com.willr27.blocklings.client.gui.util.GuiUtil;
 import com.willr27.blocklings.client.gui.util.ScissorStack;
 import com.willr27.blocklings.entity.blockling.BlocklingEntity;
+import com.willr27.blocklings.entity.blockling.BlocklingHand;
 import com.willr27.blocklings.entity.blockling.goal.BlocklingTargetGoal;
+import com.willr27.blocklings.entity.blockling.goal.config.iteminfo.ItemInfo;
 import com.willr27.blocklings.entity.blockling.goal.config.iteminfo.OrderedItemInfoSet;
 import com.willr27.blocklings.entity.blockling.skill.skills.GeneralSkills;
 import com.willr27.blocklings.entity.blockling.task.BlocklingTasks;
 import com.willr27.blocklings.entity.blockling.task.config.ItemConfigurationTypeProperty;
 import com.willr27.blocklings.network.messages.GoalMessage;
 import com.willr27.blocklings.util.BlocklingsTranslationTextComponent;
+import com.willr27.blocklings.util.BlockUtil;
+import com.willr27.blocklings.util.EntityUtil;
 import com.willr27.blocklings.util.Version;
 import com.willr27.blocklings.util.event.ValueChangedEvent;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.Container;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.core.Direction;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.Mth;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.ChatFormatting;
 import com.willr27.blocklings.loader.Dist;
 import com.willr27.blocklings.loader.OnlyIn;
 import com.willr27.blocklings.inventory.BlocklingItemHandler;
+import com.willr27.blocklings.inventory.AbstractInventory;
+import com.willr27.blocklings.inventory.EquipmentInventory;
 import com.willr27.blocklings.platform.Services;
 
 import javax.annotation.Nonnull;
@@ -89,6 +99,31 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
     private BaseControl itemsContainer;
 
     /**
+     * The maximum search range squared for finding configured containers.
+     */
+    private static final float SEARCH_RANGE_SQ = 256.0f;
+
+    /**
+     * Interact range squared (~1.5 blocks) — must stand next to the container.
+     */
+    private static final float INTERACT_RANGE_SQ = 2.25f;
+
+    /**
+     * Ticks between each item transfer (~0.4s). Arm swing matches this interval.
+     */
+    private static final int TRANSFER_INTERVAL_TICKS = 8;
+
+    /**
+     * Ticks to play the gather/open animation before transferring.
+     */
+    private static final int OPEN_ANIM_TICKS = 6;
+
+    /**
+     * Ticks to play the gather/close animation after transferring.
+     */
+    private static final int CLOSE_ANIM_TICKS = 6;
+
+    /**
      * The amount of items that can be transferred per second.
      */
     private int transferAmount = 1;
@@ -97,6 +132,53 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
      * The timer used to determine when to transfer items.
      */
     private int transferTimer = 0;
+
+    /**
+     * Current deposit/take ceremony phase.
+     */
+    @Nonnull
+    private CeremonyPhase ceremonyPhase = CeremonyPhase.NONE;
+
+    /**
+     * Ticks spent in the current ceremony phase.
+     */
+    private int ceremonyTimer = 0;
+
+    /**
+     * Whether the container lid/openers counter is currently open.
+     */
+    private boolean containerLidOpen = false;
+
+    /**
+     * Position of the container whose lid we opened (for safe close if target is cleared).
+     */
+    @Nullable
+    private BlockPos openedContainerPos = null;
+
+    /**
+     * Whether tools were temporarily swapped for a deposit/take display item.
+     */
+    private boolean toolsSwapped = false;
+
+    /**
+     * Saved main-hand stack while displaying a transfer item.
+     */
+    @Nullable
+    private ItemStack savedMainHand = null;
+
+    /**
+     * Saved off-hand stack while displaying a transfer item.
+     */
+    @Nullable
+    private ItemStack savedOffHand = null;
+
+    private enum CeremonyPhase
+    {
+        NONE,
+        OPEN,
+        TRANSFER,
+        CLOSE
+    }
 
     /**
      * @param id        the id associated with the goal's task.
@@ -123,6 +205,10 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
     @Override
     public void writeToNBT(@Nonnull CompoundTag taskTag)
     {
+        // Never persist mid-swap hand state — restore tools before equipment is saved with the entity.
+        restoreDepositTools();
+        closeContainerLid();
+
         super.writeToNBT(taskTag);
 
         ListTag containerInfosTag = new ListTag();
@@ -141,6 +227,7 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
     {
         super.readFromNBT(taskTag, tagVersion);
 
+        containerInfos.clear();
         ListTag containerInfosTag = taskTag.getList("container_infos", 10);
 
         for (int i = 0; i < containerInfosTag.size(); i++)
@@ -186,6 +273,7 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
     {
         super.decode(buf);
 
+        containerInfos.clear();
         int size = buf.readInt();
 
         for (int i = 0; i < size; i++)
@@ -199,26 +287,285 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
     }
 
     @Override
+    public void stop()
+    {
+        cleanupCeremony();
+        super.stop();
+    }
+
+    @Override
     protected void tickGoal()
     {
-        if (transferTimer < 20)
+        if (!hasTarget())
         {
-            transferTimer++;
-
+            cleanupCeremony();
             return;
         }
 
-        if (isInRangeOfPathTargetPos())
-        {
-            boolean depositedAnItem = tryTransferItems(getTarget(), false);
+        ContainerInfo target = getTarget();
+        BlockPos lookPos = target.getBlockPos();
+        blockling.getLookControl().setLookAt(lookPos.getX() + 0.5, lookPos.getY() + 0.5, lookPos.getZ() + 0.5);
 
-            // If no items were deposited then try other targets before this one again.
-            if (!depositedAnItem)
+        if (!isInRangeOfPathTargetPos())
+        {
+            // Still walking — abort mid-ceremony if we somehow left range.
+            if (ceremonyPhase != CeremonyPhase.NONE)
             {
-                markTargetBad();
+                cleanupCeremony();
+            }
+            return;
+        }
+
+        switch (ceremonyPhase)
+        {
+            case NONE ->
+            {
+                // Never open the chest if nothing can actually be transferred (advanced thresholds, full chest, etc.).
+                if (!tryTransferItems(target, true))
+                {
+                    cleanupCeremony();
+                    markTargetBad();
+                    return;
+                }
+
+                ceremonyPhase = CeremonyPhase.OPEN;
+                ceremonyTimer = 0;
+                openContainerLid(target);
+                swapToolsForDeposit(findDisplayStack());
+                // Drive arm swing in BlocklingModel (gather only animates when InteractionHand != NONE).
+                blockling.getStats().InteractionHand.setValue(BlocklingHand.BOTH);
+                startGatherAnimation();
+            }
+            case OPEN ->
+            {
+                ceremonyTimer++;
+                tickGatherAnimation();
+                if (ceremonyTimer >= OPEN_ANIM_TICKS)
+                {
+                    ceremonyPhase = CeremonyPhase.TRANSFER;
+                    ceremonyTimer = 0;
+                    // Start a full swing cycle, then deposit/take at the end of the cycle.
+                    transferTimer = 0;
+                }
+            }
+            case TRANSFER ->
+            {
+                transferTimer++;
+                // One arm-swing cycle == one transfer pulse (same interval as items moved).
+                tickGatherAnimation();
+
+                if (transferTimer < TRANSFER_INTERVAL_TICKS)
+                {
+                    return;
+                }
+
+                transferTimer = 0;
+                boolean transferred = tryTransferItems(target, false);
+
+                // Finished with this container when nothing more can be transferred.
+                if (!transferred || !tryTransferItems(target, true))
+                {
+                    ceremonyPhase = CeremonyPhase.CLOSE;
+                    ceremonyTimer = 0;
+                    restoreDepositTools();
+                    startGatherAnimation();
+                }
+            }
+            case CLOSE ->
+            {
+                if (ceremonyTimer == 0)
+                {
+                    closeContainerLid();
+                }
+
+                ceremonyTimer++;
+                tickGatherAnimation();
+
+                if (ceremonyTimer >= CLOSE_ANIM_TICKS)
+                {
+                    stopGatherAnimation();
+                    ceremonyPhase = CeremonyPhase.NONE;
+                    ceremonyTimer = 0;
+
+                    if (!tryTransferItems(target, true))
+                    {
+                        markTargetBad();
+                    }
+                }
+            }
+        }
+    }
+
+    private void startGatherAnimation()
+    {
+        blockling.getStats().InteractionHand.setValue(BlocklingHand.BOTH);
+        // Count 0..1 drives one arm swing in BlocklingModel (same period as a transfer).
+        blockling.getActions().gather.setCount(0.0f);
+    }
+
+    private void stopGatherAnimation()
+    {
+        blockling.getActions().gather.stop();
+        blockling.getStats().InteractionHand.setValue(BlocklingHand.NONE);
+    }
+
+    private void tickGatherAnimation()
+    {
+        if (blockling.getStats().InteractionHand.getValue() != BlocklingHand.BOTH)
+        {
+            blockling.getStats().InteractionHand.setValue(BlocklingHand.BOTH);
+        }
+
+        float progress;
+        if (ceremonyPhase == CeremonyPhase.TRANSFER)
+        {
+            progress = transferTimer / (float) TRANSFER_INTERVAL_TICKS;
+        }
+        else if (ceremonyPhase == CeremonyPhase.OPEN)
+        {
+            progress = ceremonyTimer / (float) OPEN_ANIM_TICKS;
+        }
+        else if (ceremonyPhase == CeremonyPhase.CLOSE)
+        {
+            progress = ceremonyTimer / (float) CLOSE_ANIM_TICKS;
+        }
+        else
+        {
+            progress = 0.0f;
+        }
+
+        // Keep in [0, 1) so gather stays running; model uses this as swing percent.
+        float count = Mth.clamp(progress, 0.0f, 0.999f);
+        blockling.getActions().gather.setCount(count);
+    }
+
+    /**
+     * @return a display stack for the item currently being transferred, or empty.
+     */
+    @Nonnull
+    private ItemStack findDisplayStack()
+    {
+        for (ItemInfo itemInfo : itemInfoSet)
+        {
+            Item item = itemInfo.getItem();
+
+            if (isTakeItems())
+            {
+                return new ItemStack(item);
+            }
+
+            if (hasItemInInventory(item))
+            {
+                return new ItemStack(item);
             }
         }
 
+        return ItemStack.EMPTY;
+    }
+
+    /**
+     * Temporarily puts the transfer item in the main hand (tools saved and restored safely).
+     */
+    private void swapToolsForDeposit(@Nonnull ItemStack displayStack)
+    {
+        if (toolsSwapped || world.isClientSide() || displayStack.isEmpty())
+        {
+            return;
+        }
+
+        // Deep-copy tools out of the equipment slots before replacing them.
+        savedMainHand = blockling.getEquipment().getHandStack(InteractionHand.MAIN_HAND).copy();
+        savedOffHand = blockling.getEquipment().getHandStack(InteractionHand.OFF_HAND).copy();
+        toolsSwapped = true;
+
+        // Display-only copy — never taken from inventory tool slots during deposit.
+        blockling.getEquipment().setHandStack(InteractionHand.MAIN_HAND, displayStack.copyWithCount(1));
+        blockling.getEquipment().setHandStack(InteractionHand.OFF_HAND, ItemStack.EMPTY);
+    }
+
+    /**
+     * Restores tools saved during {@link #swapToolsForDeposit(ItemStack)}.
+     */
+    private void restoreDepositTools()
+    {
+        if (!toolsSwapped)
+        {
+            return;
+        }
+
+        if (world.isClientSide())
+        {
+            toolsSwapped = false;
+            savedMainHand = null;
+            savedOffHand = null;
+            return;
+        }
+
+        try
+        {
+            blockling.getEquipment().setHandStack(
+                    InteractionHand.MAIN_HAND,
+                    savedMainHand != null ? savedMainHand : ItemStack.EMPTY);
+            blockling.getEquipment().setHandStack(
+                    InteractionHand.OFF_HAND,
+                    savedOffHand != null ? savedOffHand : ItemStack.EMPTY);
+        }
+        finally
+        {
+            toolsSwapped = false;
+            savedMainHand = null;
+            savedOffHand = null;
+        }
+    }
+
+    private void openContainerLid(@Nonnull ContainerInfo containerInfo)
+    {
+        if (containerLidOpen || world.isClientSide())
+        {
+            return;
+        }
+
+        BlockPos pos = containerInfo.getBlockPos();
+        // Use block events + sound only — do NOT call startOpen(player).
+        // startOpen ties the lid to the owner player and raced with GUI/config, and must not
+        // mutate opener state while the player is configuring or has screens open.
+        var state = world.getBlockState(pos);
+        world.blockEvent(pos, state.getBlock(), 1, 1);
+        world.playSound(null, pos, SoundEvents.CHEST_OPEN, SoundSource.BLOCKS, 0.5f, world.random.nextFloat() * 0.1f + 0.9f);
+
+        containerLidOpen = true;
+        openedContainerPos = pos.immutable();
+    }
+
+    private void closeContainerLid()
+    {
+        if (!containerLidOpen || world.isClientSide())
+        {
+            containerLidOpen = false;
+            openedContainerPos = null;
+            return;
+        }
+
+        BlockPos pos = openedContainerPos != null ? openedContainerPos : (hasTarget() ? getTarget().getBlockPos() : null);
+
+        if (pos != null)
+        {
+            var state = world.getBlockState(pos);
+            world.blockEvent(pos, state.getBlock(), 1, 0);
+            world.playSound(null, pos, SoundEvents.CHEST_CLOSE, SoundSource.BLOCKS, 0.5f, world.random.nextFloat() * 0.1f + 0.9f);
+        }
+
+        containerLidOpen = false;
+        openedContainerPos = null;
+    }
+
+    private void cleanupCeremony()
+    {
+        closeContainerLid();
+        restoreDepositTools();
+        stopGatherAnimation();
+        ceremonyPhase = CeremonyPhase.NONE;
+        ceremonyTimer = 0;
         transferTimer = 0;
     }
 
@@ -231,9 +578,21 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
      */
     protected abstract boolean tryTransferItems(@Nonnull ContainerInfo containerInfo, boolean simulate);
 
+    /**
+     * @return true when stop thresholds should be used (mid-transfer), false for start thresholds (deciding to visit).
+     */
+    protected boolean isEnforcingStopThresholds()
+    {
+        return ceremonyPhase == CeremonyPhase.TRANSFER || ceremonyPhase == CeremonyPhase.CLOSE;
+    }
+
     @Override
     public boolean tryRecalcTarget()
     {
+        // Do NOT auto-remove Blank/unconfigured entries here.
+        // Right-click clears isConfiguring before ContainerGoalContainerMessage arrives,
+        // so purging Blanks races and deletes the chest the player just selected.
+
         if (!hasItemsToTransfer())
         {
             setTarget(null);
@@ -242,22 +601,9 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
             return false;
         }
 
-//        for (BlockPos testPos : BlockPos.betweenClosed(blockling.blockPosition().offset(-range, -range, -range), blockling.blockPosition().offset(range, range, range)))
-//        {
-//            TileEntity tileEntity = world.getBlockEntity(testPos);
-//
-//            if (isValidTarget(tileEntity))
-//            {
-//                setTarget(tileEntity);
-//                setPathTargetPos(null, null);
-//
-//                return true;
-//            }
-//        }
-
         for (ContainerInfo containerInfo : containerInfos)
         {
-            if (!isInRange(containerInfo.getBlockPos(), getRangeSq()))
+            if (!isInRange(containerInfo.getBlockPos(), SEARCH_RANGE_SQ))
             {
                 continue;
             }
@@ -277,8 +623,31 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
     @Override
     protected boolean recalcPath(boolean force)
     {
-        setPathTargetPos(getTarget().getBlockPos(), path);
+        if (!hasTarget())
+        {
+            setPathTargetPos(null, null);
+            return false;
+        }
 
+        BlockPos containerPos = getTarget().getBlockPos();
+
+        // Already close enough to interact — no path required.
+        if (BlockUtil.distanceSq(blockling.blockPosition(), containerPos) <= getRangeSq())
+        {
+            setPathTargetPos(containerPos, null);
+            return true;
+        }
+
+        // Use stop distance 0 to get the best path; interact range is enforced by isInRangeOfPathTargetPos.
+        Path pathToContainer = EntityUtil.createPathTo(blockling, containerPos, 0);
+
+        if (pathToContainer == null)
+        {
+            setPathTargetPos(null, null);
+            return false;
+        }
+
+        setPathTargetPos(containerPos, pathToContainer);
         return true;
     }
 
@@ -291,7 +660,7 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
     @Override
     public float getRangeSq()
     {
-        return 256.0f;
+        return INTERACT_RANGE_SQ;
     }
 
     @Override
@@ -313,6 +682,22 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
     }
 
     @Override
+    public boolean isStuck()
+    {
+        if (hasPathTargetPos() && isInRangeOfPathTargetPos())
+        {
+            return false;
+        }
+
+        if (hasPath() && !getPath().isDone())
+        {
+            return false;
+        }
+
+        return super.isStuck();
+    }
+
+    @Override
     public boolean isValidTarget(@Nullable ContainerInfo containerInfo)
     {
         if (containerInfo == null)
@@ -325,7 +710,18 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
             return false;
         }
 
+        // Manual "Chest" pick without world coords must not target (0,0,0).
+        if (containerInfo.getBlockPos().equals(BlockPos.ZERO))
+        {
+            return false;
+        }
+
         if (badTargets.contains(containerInfo))
+        {
+            return false;
+        }
+
+        if (!BlockUtil.isContainer(world, containerInfo.getBlockPos()))
         {
             return false;
         }
@@ -351,7 +747,9 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
      */
     public int countItemsInInventory(@Nonnull Item item)
     {
-        return blockling.getEquipment().count(new ItemStack(item));
+        // Ignore tool slots so a temporary display stack in-hand is never counted/deposited.
+        AbstractInventory inv = blockling.getEquipment();
+        return inv.count(new ItemStack(item), EquipmentInventory.TOOL_OFF_HAND + 1, inv.getContainerSize() - 1);
     }
 
     /**
@@ -359,7 +757,7 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
      */
     public boolean hasItemInInventory(@Nonnull Item item)
     {
-        return blockling.getEquipment().has(new ItemStack(item));
+        return countItemsInInventory(item) > 0;
     }
 
     /**
@@ -429,7 +827,18 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
     @Nullable
     public BlocklingItemHandler getItemHandler(@Nonnull BlockEntity blockEntity, @Nonnull Direction direction)
     {
-        return Services.INVENTORY.getItemHandler(world, blockEntity.getBlockPos(), blockEntity, direction);
+        BlocklingItemHandler handler = Services.INVENTORY.getItemHandler(world, blockEntity.getBlockPos(), blockEntity, direction);
+        if (handler != null)
+        {
+            return handler;
+        }
+
+        if (blockEntity instanceof net.minecraft.world.Container container)
+        {
+            return new com.willr27.blocklings.inventory.ContainerItemHandlerAdapter(container, direction);
+        }
+
+        return null;
     }
 
     /**
@@ -447,25 +856,39 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
      */
     public void addContainerInfo(@Nonnull ContainerInfo containerInfo)
     {
-        addContainerInfo(containerInfo, true);
+        addContainerInfo(containerInfo, false, true);
+    }
+
+    /**
+     * Adds the given container info to the list and syncs it to the client/server.
+     *
+     * @param containerInfo the container info.
+     * @param configureInWorld whether to configure the container in the world.
+     */
+    public void addContainerInfo(@Nonnull ContainerInfo containerInfo, boolean configureInWorld)
+    {
+        addContainerInfo(containerInfo, configureInWorld, true);
     }
 
     /**
      * Adds the given container info to the list.
      *
      * @param containerInfo the container info.
+     * @param configureInWorld whether to configure the container in the world.
      * @param sync whether to sync the container info to the client.
      */
-    public void addContainerInfo(@Nonnull ContainerInfo containerInfo, boolean sync)
+    public void addContainerInfo(@Nonnull ContainerInfo containerInfo, boolean configureInWorld, boolean sync)
     {
         containerInfos.add(containerInfo);
 
-            Player player = (Player) blockling.getOwner();
+        if (configureInWorld && blockling.getOwner() instanceof Player player)
+        {
             ContainerConfigureCapability.get(player).isConfiguring = true;
+        }
 
         if (sync)
         {
-            new ContainerGoalContainerAddRemoveMessage(blockling, id, containerInfos.size() - 1, true).sync();
+            new ContainerGoalContainerAddRemoveMessage(blockling, id, containerInfos.size() - 1, true, configureInWorld).sync();
             new ContainerGoalContainerMessage(blockling, id, containerInfo, containerInfos.size() - 1).sync();
         }
     }
@@ -488,11 +911,16 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
      */
     public void removeContainerInfo(int index, boolean sync)
     {
+        if (index < 0 || index >= containerInfos.size())
+        {
+            return;
+        }
+
         containerInfos.remove(index);
 
         if (sync)
         {
-            new ContainerGoalContainerAddRemoveMessage(blockling, id, index, false).sync();
+            new ContainerGoalContainerAddRemoveMessage(blockling, id, index, false, false).sync();
         }
     }
 
@@ -516,7 +944,24 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
      */
     public void setContainerInfo(int index, @Nonnull ContainerInfo containerInfo, boolean sync)
     {
-        containerInfos.set(index, containerInfo);
+        if (index < 0)
+        {
+            return;
+        }
+
+        if (index < containerInfos.size())
+        {
+            containerInfos.set(index, containerInfo);
+        }
+        else if (index == containerInfos.size())
+        {
+            // Message arrived after a desynced remove — re-append instead of crashing.
+            containerInfos.add(containerInfo);
+        }
+        else
+        {
+            return;
+        }
 
         if (sync)
         {
@@ -588,13 +1033,164 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
     public void addConfigTabControls(@Nonnull TabbedPanel tabbedPanel)
     {
         super.addConfigTabControls(tabbedPanel);
+
         itemsContainer = tabbedPanel.addTab(BlocklingsTranslationTextComponent.of("config.items"));
-        tabbedPanel.addTab(BlocklingsTranslationTextComponent.of("config.containers"));
+        itemsContainer.setCanScrollVertically(true);
+
+        recreateItemsConfigurationControl(itemConfigurationTypeProperty.getType());
+
+        BaseControl containersContainer = tabbedPanel.addTab(BlocklingsTranslationTextComponent.of("config.containers"));
+        containersContainer.setCanScrollVertically(true);
+
+        // Unfinished Blank rows are kept until the player removes them or finishes world-pick.
+        // Auto-purging here previously wiped chests that had just been selected (client/server race).
+
+        StackPanel stackPanel = new StackPanel();
+        stackPanel.setParent(containersContainer);
+        stackPanel.setWidthPercentage(1.0);
+        stackPanel.setFitHeightToContent(true);
+        stackPanel.setMargins(5.0, 9.0, 5.0, 5.0);
+        stackPanel.setSpacing(4.0);
+        stackPanel.setClipContentsToBounds(false);
+        stackPanel.eventBus.subscribe((BaseControl c, ReorderEvent e) ->
+        {
+            int movedIndex = stackPanel.getChildren().indexOf(e.draggedControl);
+            int closestIndex = stackPanel.getChildren().indexOf(e.closestControl);
+
+            moveContainerInfo(movedIndex, closestIndex + (e.insertBefore ? 0 : 1));
+        });
+
+        Control addContainerContainer = new Control();
+        addContainerContainer.setParent(stackPanel);
+        addContainerContainer.setWidthPercentage(1.0);
+        addContainerContainer.setFitHeightToContent(true);
+        addContainerContainer.setReorderable(false);
+
+        Function<ContainerInfo, ContainerControl> addContainerControl = (ContainerInfo containerInfo) ->
+        {
+            ContainerControl containerControl = new ContainerControl(containerInfo);
+            stackPanel.insertChildBefore(containerControl, addContainerContainer);
+            containerControl.setWidthPercentage(1.0);
+            containerControl.setDraggableY(true);
+            containerControl.setScrollFromDragControl(containersContainer);
+            containerControl.eventBus.subscribe((BaseControl c, ValueChangedEvent<ContainerInfo> e2) ->
+            {
+                ContainerInfo info = ((ContainerControl) c).containerInfo;
+                int index = containerInfos.indexOf(info);
+                if (index >= 0)
+                {
+                    setContainerInfo(index, info);
+                }
+            });
+            containerControl.eventBus.subscribe((BaseControl c, ParentChangedEvent e2) ->
+            {
+                if (e2.newParent == null)
+                {
+                    int index = containerInfos.indexOf(((ContainerControl) c).containerInfo);
+                    if (index >= 0)
+                    {
+                        removeContainerInfo(index);
+                    }
+                }
+            });
+
+            return containerControl;
+        };
+
+        for (ContainerInfo containerInfo : containerInfos)
+        {
+            addContainerControl.apply(containerInfo);
+        }
+
+        TexturedControl addContainerButton = new TexturedControl(Textures.Common.PLUS_ICON)
+        {
+            @Override
+            protected void onRender(@Nonnull GuiGraphics matrixStack, @Nonnull ScissorStack scissorStack, double mouseX, double mouseY, float partialTicks)
+            {
+                if (isContainerListFull())
+                {
+                    renderTextureAsBackground(matrixStack, Textures.Common.PLUS_ICON_DISABLED);
+                }
+                else
+                {
+                    super.onRender(matrixStack, scissorStack, mouseX, mouseY, partialTicks);
+                }
+            }
+
+            @Override
+            public void onRenderTooltip(@Nonnull GuiGraphics matrixStack, double mouseX, double mouseY, float partialTicks)
+            {
+                List<FormattedCharSequence> tooltip = new ArrayList<>();
+                tooltip.add(BlocklingsTranslationTextComponent.create("config.container.add")
+                        .withStyle(isContainerListFull() ? ChatFormatting.GRAY : ChatFormatting.WHITE)
+                        .getVisualOrderText());
+                tooltip.add(BlocklingsTranslationTextComponent.create("config.container.amount", containerInfos.size(), MAX_CONTAINERS)
+                        .withStyle(ChatFormatting.GRAY)
+                        .getVisualOrderText());
+                tooltip.add(Component.empty().getVisualOrderText());
+                tooltip.addAll(GuiUtil.get().split(
+                        BlocklingsTranslationTextComponent.create(
+                                "config.container.add.help",
+                                Component.literal(Minecraft.getInstance().options.keyShift.getTranslatedKeyMessage().getString())
+                                        .withStyle(ChatFormatting.ITALIC))
+                                .withStyle(ChatFormatting.GRAY),
+                        200));
+                renderTooltip(matrixStack, mouseX, mouseY, tooltip);
+            }
+
+            @Override
+            protected void onMouseReleased(@Nonnull MouseReleasedEvent e)
+            {
+                if (isPressed() && !isContainerListFull())
+                {
+                    ContainerInfo containerInfo = new ContainerInfo(
+                            BlockPos.ZERO,
+                            Blocks.AIR,
+                            Arrays.asList(Direction.UP, Direction.WEST, Direction.EAST, Direction.SOUTH, Direction.NORTH, Direction.DOWN));
+                    addContainerInfo(containerInfo, !GuiUtil.get().isCrouchKeyDown());
+
+                    ContainerControl containerControl = addContainerControl.apply(containerInfo);
+
+                    if (GuiUtil.get().isCrouchKeyDown())
+                    {
+                        containerControl.onFirstAdded();
+                    }
+                    else
+                    {
+                        ContainerControl.currentlyConfiguredContainerControl = containerControl;
+                        ContainerControl.screenToGoBackTo = Minecraft.getInstance().screen;
+                        getScreen().setShouldReallyClose(false);
+                        ContainerControl.screenToGoBackTo.onClose();
+                        getScreen().setShouldReallyClose(true);
+                    }
+
+                    e.setIsHandled(true);
+                }
+            }
+        };
+        addContainerButton.setParent(addContainerContainer);
+        addContainerButton.setHorizontalAlignment(0.5);
+        addContainerButton.setMargins(0.0, 1.0, 0.0, 1.0);
     }
 
+    /**
+     * Recreates the items configuration control.
+     */
+    @OnlyIn(Dist.CLIENT)
     private void recreateItemsConfigurationControl(@Nonnull ItemConfigurationTypeProperty.Type type)
     {
-        // GUI port pending.
+        if (itemsContainer == null)
+        {
+            return;
+        }
+
+        itemsContainer.clearChildren();
+
+        ItemsConfigurationControl itemsConfigurationControl = type.createItemsConfigurationControl(itemInfoSet, isTakeItems());
+        itemsConfigurationControl.setParent(itemsContainer);
+        itemsConfigurationControl.setMargins(5.0, 9.0, 5.0, 5.0);
+        itemsConfigurationControl.setMaxItems(MAX_ITEMS);
+        itemsConfigurationControl.setScrollFromDragControl(itemsContainer);
     }
 
     /**
@@ -613,6 +1209,11 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
         private int index;
 
         /**
+         * Whether to configure the container in world.
+         */
+        private boolean configureInWorld;
+
+        /**
          * Empty constructor used ONLY for decoding.
          */
         public ContainerGoalContainerAddRemoveMessage()
@@ -625,12 +1226,14 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
          * @param taskId the id of the goal.
          * @param index the index of the container.
          * @param add whether to add or remove the container info.
+         * @param configureInWorld whether to configure the container in world.
          */
-        public ContainerGoalContainerAddRemoveMessage(@Nonnull BlocklingEntity blockling, @Nonnull UUID taskId, int index, boolean add)
+        public ContainerGoalContainerAddRemoveMessage(@Nonnull BlocklingEntity blockling, @Nonnull UUID taskId, int index, boolean add, boolean configureInWorld)
         {
             super(blockling, taskId);
             this.index = index;
             this.add = add;
+            this.configureInWorld = configureInWorld;
         }
 
         @Override
@@ -640,6 +1243,7 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
 
             buf.writeBoolean(add);
             buf.writeInt(index);
+            buf.writeBoolean(configureInWorld);
         }
 
         @Override
@@ -649,6 +1253,7 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
 
             add = buf.readBoolean();
             index = buf.readInt();
+            configureInWorld = buf.readBoolean();
         }
 
         @Override
@@ -656,9 +1261,9 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
         {
             if (add)
             {
-                goal.addContainerInfo(new ContainerInfo(), false);
+                goal.addContainerInfo(new ContainerInfo(), configureInWorld, false);
             }
-            else
+            else if (index >= 0 && index < goal.containerInfos.size())
             {
                 goal.removeContainerInfo(index, false);
             }
@@ -697,7 +1302,8 @@ public abstract class BlocklingContainerGoal extends BlocklingTargetGoal<Contain
         public ContainerGoalContainerMessage(@Nonnull BlocklingEntity blockling, @Nonnull UUID taskId, @Nonnull ContainerInfo containerInfo, int index)
         {
             super(blockling, taskId);
-            this.containerInfo = containerInfo;
+            // Snapshot so a later mutation of the live GUI instance cannot change the packet.
+            this.containerInfo = new ContainerInfo(containerInfo);
             this.index = index;
         }
 

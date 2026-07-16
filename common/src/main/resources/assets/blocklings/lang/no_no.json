@@ -152,7 +152,7 @@
   "blocklings.config.container.amount": "Beholdere: %d/%d",
   "blocklings.config.container.side_priority.name": "Sideprioritet",
   "blocklings.config.container.side_priority.side": "(%s)",
-  "blocklings.config.container.side_priority.desc": "Rekkefølgen som blokkeringen din vil forsøke å sette gjenstander inn i beholderen (tilsvarer ofte forskjellige spor). Lavere tall har høyere prioritet.",
+  "blocklings.config.container.side_priority.desc": "Rekkefølgen som blokkeringen vil forsøke å sette gjenstander inn i beholderen (tilsvarer ofte forskjellige spor). Lavere tall har høyere prioritet.",
   "blocklings.direction.front": "Front",
   "blocklings.direction.back": "Tilbake",
   "blocklings.direction.left": "Igjen",

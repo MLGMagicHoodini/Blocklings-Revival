@@ -209,16 +209,24 @@ public class StatsScreen extends TabbedScreen
                 splitText = GuiUtil.get().split(BlocklingsTranslationTextComponent.create("type." + blockling.getNaturalBlocklingType().key + ".passive").getString(), 200);
                 splitText.stream().map(s -> Component.literal(ChatFormatting.AQUA + s).getVisualOrderText()).forEach(tooltip::add);
 
-                tooltip.add(Component.literal(ChatFormatting.GRAY + BlocklingsTranslationTextComponent.create("type.name").getString() + ChatFormatting.WHITE + blockling.getBlocklingType().name.getString()).getVisualOrderText());
-
-                if (GuiUtil.get().isCrouchKeyDown())
+                // Primary type only after a real transformation (hasTransformed), not when identical at spawn.
+                if (blockling.hasTransformed())
                 {
-                    splitText = GuiUtil.get().split(BlocklingsTranslationTextComponent.create("type.desc").getString(), 200);
-                    splitText.stream().map(s -> Component.literal(ChatFormatting.DARK_GRAY + s).getVisualOrderText()).forEach(tooltip::add);
-                }
+                    tooltip.add(Component.literal(ChatFormatting.GRAY + BlocklingsTranslationTextComponent.create("type.name").getString() + ChatFormatting.WHITE + blockling.getBlocklingType().name.getString()).getVisualOrderText());
 
-                splitText = GuiUtil.get().split(BlocklingsTranslationTextComponent.create("type." + blockling.getBlocklingType().key + ".passive").getString(), 200);
-                splitText.stream().map(s -> Component.literal(ChatFormatting.AQUA + s).getVisualOrderText()).forEach(tooltip::add);
+                    if (GuiUtil.get().isCrouchKeyDown())
+                    {
+                        splitText = GuiUtil.get().split(BlocklingsTranslationTextComponent.create("type.desc").getString(), 200);
+                        splitText.stream().map(s -> Component.literal(ChatFormatting.DARK_GRAY + s).getVisualOrderText()).forEach(tooltip::add);
+                    }
+
+                    // Show primary passive when it differs from natural (avoid duplicate lines).
+                    if (blockling.getBlocklingType() != blockling.getNaturalBlocklingType())
+                    {
+                        splitText = GuiUtil.get().split(BlocklingsTranslationTextComponent.create("type." + blockling.getBlocklingType().key + ".passive").getString(), 200);
+                        splitText.stream().map(s -> Component.literal(ChatFormatting.AQUA + s).getVisualOrderText()).forEach(tooltip::add);
+                    }
+                }
 
                 String foodsString = ChatFormatting.GRAY + BlocklingsTranslationTextComponent.create("type.foods").getString() + ChatFormatting.WHITE + BlocklingsTranslationTextComponent.create("type.foods.flowers").getString();
                 if (!blockling.getBlocklingType().foods.isEmpty())

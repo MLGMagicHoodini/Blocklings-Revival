@@ -52,9 +52,13 @@ public final class FabricConfigBridge {
 
         setComment(config, "Spawn", "Natural/chunk spawn tuning.");
         putIfAbsent(config, "Spawn.enabled", true);
-        putIfAbsent(config, "Spawn.nearbyCap", 3);
-        putIfAbsent(config, "Spawn.nearbyRadius", 64.0D);
-        putIfAbsent(config, "Spawn.preventDuplicateNearbyType", true);
+        putIfAbsent(config, "Spawn.nearbyCap", 6);
+        putIfAbsent(config, "Spawn.nearbyRadius", 40.0D);
+        putIfAbsent(config, "Spawn.preventDuplicateNearbyType", false);
+        putIfAbsent(config, "Spawn.starterSpawnEnabled", false);
+        putIfAbsent(config, "Spawn.starterSpawnCount", 5);
+        putIfAbsent(config, "Spawn.starterSpawnRadius", 12);
+        putIfAbsent(config, "Spawn.starterSpawnDelayTicks", 40);
 
         for (BlocklingType type : BlocklingType.TYPES) {
             String prefix = "Spawn.types." + type.key;
@@ -120,9 +124,13 @@ public final class FabricConfigBridge {
 
         BlocklingSpawnConfig spawn = common.spawn;
         spawn.enabled = () -> config.getOrElse("Spawn.enabled", true);
-        spawn.nearbyCap = () -> config.getOrElse("Spawn.nearbyCap", 3);
-        spawn.nearbyRadius = () -> config.getOrElse("Spawn.nearbyRadius", 64.0D);
-        spawn.preventDuplicateNearbyType = () -> config.getOrElse("Spawn.preventDuplicateNearbyType", true);
+        spawn.nearbyCap = () -> config.getOrElse("Spawn.nearbyCap", 6);
+        spawn.nearbyRadius = () -> config.getOrElse("Spawn.nearbyRadius", 40.0D);
+        spawn.preventDuplicateNearbyType = () -> config.getOrElse("Spawn.preventDuplicateNearbyType", false);
+        spawn.starterSpawnEnabled = () -> config.getOrElse("Spawn.starterSpawnEnabled", false);
+        spawn.starterSpawnCount = () -> config.getOrElse("Spawn.starterSpawnCount", 5);
+        spawn.starterSpawnRadius = () -> config.getOrElse("Spawn.starterSpawnRadius", 12);
+        spawn.starterSpawnDelayTicks = () -> config.getOrElse("Spawn.starterSpawnDelayTicks", 40);
 
         for (BlocklingType type : BlocklingType.TYPES) {
             BlocklingSpawnConfig.TypeConfig typeConfig = spawn.forType(type);

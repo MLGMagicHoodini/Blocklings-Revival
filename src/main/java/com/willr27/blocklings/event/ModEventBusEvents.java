@@ -1,6 +1,5 @@
 package com.willr27.blocklings.event;
 
-import com.mojang.blaze3d.platform.NativeImage;
 import com.willr27.blocklings.Blocklings;
 import com.willr27.blocklings.config.BlocklingsConfig;
 import com.willr27.blocklings.entity.BlocklingsEntityTypes;
@@ -9,23 +8,15 @@ import com.willr27.blocklings.entity.blockling.BlocklingType;
 import com.willr27.blocklings.util.BlocklingsResourceLocation;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
-/*
 import net.minecraft.client.renderer.texture.NativeImage;
-*/
 import net.minecraft.client.renderer.texture.SimpleTexture;
-import net.minecraft.resources.ResourceLocation;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
-/*import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.TextureStitchEvent;
 import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;*/
+import net.minecraftforge.fml.common.Mod;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;

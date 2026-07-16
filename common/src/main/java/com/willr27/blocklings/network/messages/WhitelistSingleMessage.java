@@ -83,7 +83,8 @@ public class WhitelistSingleMessage extends BlocklingMessage<WhitelistSingleMess
     protected void handle(@Nonnull Player player, @Nonnull BlocklingEntity blockling)
     {
         var task = blockling.getTasks().getTaskOrLog(taskId, "WhitelistSingleMessage");
-        if (task != null && task.getGoal() != null)
+        if (task != null && task.getGoal() != null
+                && whitelistId >= 0 && whitelistId < task.getGoal().whitelists.size())
         {
             task.getGoal().whitelists.get(whitelistId).setEntry(entry, value, false);
         }

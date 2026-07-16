@@ -5,19 +5,7 @@ import com.willr27.blocklings.util.BlocklingsResourceLocation;
 import com.willr27.blocklings.util.BlocklingsTranslationTextComponent;
 import com.willr27.blocklings.util.ItemUtil;
 import com.willr27.blocklings.util.Version;
-import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.biome.Biomes;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-/*import net.minecraft.block.Block;
+import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -31,7 +19,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.Biomes;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;*/
+import net.minecraftforge.api.distmarker.OnlyIn;
 
 import javax.annotation.Nonnull;
 import java.util.*;
@@ -78,94 +66,94 @@ public class BlocklingType
         TYPES.forEach(blocklingType -> { blocklingType.spawnPredicates.clear(); blocklingType.foods.clear(); });
 
         GRASS.addFoods(Blocks.GRASS_BLOCK);
-        GRASS.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, Level.OVERWORLD));
+        GRASS.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, World.OVERWORLD));
         GRASS.spawnPredicates.add((blockling, world) -> blockBelowIs(blockling, world, Blocks.GRASS_BLOCK));
         GRASS.spawnPredicates.add((blockling, world) -> canSeeSky(blockling, world));
 
         DIRT.addFoods(Blocks.DIRT);
-        DIRT.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, Level.OVERWORLD));
+        DIRT.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, World.OVERWORLD));
         DIRT.spawnPredicates.add((blockling, world) -> blockBelowIs(blockling, world, Blocks.GRASS_BLOCK));
         DIRT.spawnPredicates.add((blockling, world) -> canSeeSky(blockling, world));
 
         OAK_LOG.addFoods(Blocks.OAK_LOG);
-        OAK_LOG.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, Level.OVERWORLD));
+        OAK_LOG.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, World.OVERWORLD));
         OAK_LOG.spawnPredicates.add((blockling, world) -> blockBelowIs(blockling, world, Blocks.GRASS_BLOCK));
         OAK_LOG.spawnPredicates.add((blockling, world) -> blockNearbyIs(blockling, world, 8, Blocks.OAK_LOG));
 
         BIRCH_LOG.addFoods(Blocks.BIRCH_LOG);
-        BIRCH_LOG.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, Level.OVERWORLD));
+        BIRCH_LOG.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, World.OVERWORLD));
         BIRCH_LOG.spawnPredicates.add((blockling, world) -> blockBelowIs(blockling, world, Blocks.GRASS_BLOCK));
         BIRCH_LOG.spawnPredicates.add((blockling, world) -> blockNearbyIs(blockling, world, 8, Blocks.BIRCH_LOG));
 
         SPRUCE_LOG.addFoods(Blocks.SPRUCE_LOG);
-        SPRUCE_LOG.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, Level.OVERWORLD));
+        SPRUCE_LOG.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, World.OVERWORLD));
         SPRUCE_LOG.spawnPredicates.add((blockling, world) -> blockBelowIs(blockling, world, Blocks.GRASS_BLOCK));
         SPRUCE_LOG.spawnPredicates.add((blockling, world) -> blockNearbyIs(blockling, world, 8, Blocks.SPRUCE_LOG));
 
         JUNGLE_LOG.addFoods(Blocks.JUNGLE_LOG);
-        JUNGLE_LOG.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, Level.OVERWORLD));
+        JUNGLE_LOG.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, World.OVERWORLD));
         JUNGLE_LOG.spawnPredicates.add((blockling, world) -> blockBelowIs(blockling, world, Blocks.GRASS_BLOCK));
         JUNGLE_LOG.spawnPredicates.add((blockling, world) -> blockNearbyIs(blockling, world, 8, Blocks.JUNGLE_LOG));
 
         DARK_OAK_LOG.addFoods(Blocks.DARK_OAK_LOG);
-        DARK_OAK_LOG.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, Level.OVERWORLD));
+        DARK_OAK_LOG.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, World.OVERWORLD));
         DARK_OAK_LOG.spawnPredicates.add((blockling, world) -> blockBelowIs(blockling, world, Blocks.GRASS_BLOCK));
         DARK_OAK_LOG.spawnPredicates.add((blockling, world) -> blockNearbyIs(blockling, world, 8, Blocks.DARK_OAK_LOG));
 
         ACACIA_LOG.addFoods(Blocks.ACACIA_LOG);
-        ACACIA_LOG.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, Level.OVERWORLD));
+        ACACIA_LOG.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, World.OVERWORLD));
         ACACIA_LOG.spawnPredicates.add((blockling, world) -> blockBelowIs(blockling, world, Blocks.GRASS_BLOCK));
         ACACIA_LOG.spawnPredicates.add((blockling, world) -> blockNearbyIs(blockling, world, 8, Blocks.ACACIA_LOG));
 
         STONE.addFoods(Blocks.STONE);
-        STONE.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, Level.OVERWORLD));
+        STONE.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, World.OVERWORLD));
         STONE.spawnPredicates.add((blockling, world) -> !blockBelowIs(blockling, world, Blocks.GRASS_BLOCK));
         STONE.spawnPredicates.add((blockling, world) -> blockNearbyIs(blockling, world, 4, Blocks.STONE));
 
         IRON.addFoods(Items.IRON_INGOT);
         IRON.addFoods(Blocks.IRON_ORE, Blocks.IRON_BLOCK);
-        IRON.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, Level.OVERWORLD));
+        IRON.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, World.OVERWORLD));
         IRON.spawnPredicates.add((blockling, world) -> !blockBelowIs(blockling, world, Blocks.GRASS_BLOCK));
         IRON.spawnPredicates.add((blockling, world) -> blockNearbyIs(blockling, world, 6, Blocks.IRON_ORE));
 
         QUARTZ.addFoods(Items.QUARTZ);
         QUARTZ.addFoods(Blocks.NETHER_QUARTZ_ORE, Blocks.QUARTZ_BLOCK);
-        QUARTZ.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, Level.NETHER));
+        QUARTZ.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, World.NETHER));
         QUARTZ.spawnPredicates.add((blockling, world) -> blockNearbyIs(blockling, world, 8, Blocks.NETHER_QUARTZ_ORE));
 
         LAPIS.addFoods(Items.LAPIS_LAZULI);
         LAPIS.addFoods(Blocks.LAPIS_ORE, Blocks.LAPIS_BLOCK);
-        LAPIS.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, Level.OVERWORLD));
+        LAPIS.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, World.OVERWORLD));
         LAPIS.spawnPredicates.add((blockling, world) -> blockNearbyIs(blockling, world, 12, Blocks.LAPIS_ORE));
 
         GOLD.addFoods(Items.GOLD_INGOT);
         GOLD.addFoods(Blocks.GOLD_ORE, Blocks.GOLD_BLOCK);
-        GOLD.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, Level.OVERWORLD));
+        GOLD.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, World.OVERWORLD));
         GOLD.spawnPredicates.add((blockling, world) -> blockNearbyIs(blockling, world, 12, Blocks.GOLD_ORE));
 
         EMERALD.addFoods(Items.EMERALD);
         EMERALD.addFoods(Blocks.EMERALD_ORE, Blocks.EMERALD_BLOCK);
-        EMERALD.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, Level.OVERWORLD));
+        EMERALD.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, World.OVERWORLD));
         EMERALD.spawnPredicates.add((blockling, world) -> isInBiome(blockling, world, Biomes.MOUNTAINS, Biomes.MOUNTAIN_EDGE, Biomes.GRAVELLY_MOUNTAINS, Biomes.MODIFIED_GRAVELLY_MOUNTAINS, Biomes.SNOWY_MOUNTAINS, Biomes.SNOWY_TAIGA_MOUNTAINS, Biomes.TAIGA_MOUNTAINS, Biomes.WOODED_MOUNTAINS));
         EMERALD.spawnPredicates.add((blockling, world) -> blockNearbyIs(blockling, world, 12, Blocks.EMERALD_ORE));
 
         DIAMOND.addFoods(Items.DIAMOND);
         DIAMOND.addFoods(Blocks.DIAMOND_ORE, Blocks.DIAMOND_BLOCK);
-        DIAMOND.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, Level.OVERWORLD));
+        DIAMOND.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, World.OVERWORLD));
         DIAMOND.spawnPredicates.add((blockling, world) -> blockNearbyIs(blockling, world, 12, Blocks.DIAMOND_ORE));
 
         NETHERITE.addFoods(Items.NETHERITE_SCRAP, Items.NETHERITE_INGOT);
         NETHERITE.addFoods(Blocks.ANCIENT_DEBRIS, Blocks.NETHERITE_BLOCK);
-        NETHERITE.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, Level.NETHER));
+        NETHERITE.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, World.NETHER));
         NETHERITE.spawnPredicates.add((blockling, world) -> blockNearbyIs(blockling, world, 12, Blocks.ANCIENT_DEBRIS));
 
         OBSIDIAN.addFoods(Blocks.OBSIDIAN);
-        OBSIDIAN.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, Level.OVERWORLD));
+        OBSIDIAN.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, World.OVERWORLD));
         OBSIDIAN.spawnPredicates.add((blockling, world) -> blockNearbyIs(blockling, world, 16, Blocks.OBSIDIAN));
 
         GLOWSTONE.addFoods(Items.GLOWSTONE_DUST);
         GLOWSTONE.addFoods(Blocks.GLOWSTONE);
-        GLOWSTONE.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, Level.NETHER));
+        GLOWSTONE.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, World.NETHER));
         GLOWSTONE.spawnPredicates.add((blockling, world) -> blockNearbyIs(blockling, world, 16, Blocks.GLOWSTONE));
     }
 
@@ -532,9 +520,9 @@ public class BlocklingType
      * @return true if the blockling is one of the given dimensions.
      */
     @SafeVarargs
-    private static boolean isInWorld(@Nonnull BlocklingEntity blockling, @Nonnull IWorld world, @Nonnull RegistryKey<Level>... worldTypes)
+    private static boolean isInWorld(@Nonnull BlocklingEntity blockling, @Nonnull IWorld world, @Nonnull RegistryKey<World>... worldTypes)
     {
-        for (RegistryKey<Level> worldType : worldTypes)
+        for (RegistryKey<World> worldType : worldTypes)
         {
             if (blockling.level.dimension() == worldType)
             {

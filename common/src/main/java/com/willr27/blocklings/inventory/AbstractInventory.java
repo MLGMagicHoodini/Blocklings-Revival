@@ -255,7 +255,7 @@ public abstract class AbstractInventory implements Container, IReadWriteNBT
         {
             ItemStack slotStack = getItem(i);
 
-            if (ItemStack.isSameItemSameComponents(slotStack, stack))
+            if (ItemStack.isSameItem(slotStack, stack))
             {
                 count += slotStack.getCount();
 
@@ -323,7 +323,7 @@ public abstract class AbstractInventory implements Container, IReadWriteNBT
     {
         ItemStack slotStack = getItem(slot);
 
-        if (ItemStack.isSameItemSameComponents(slotStack, stack))
+        if (ItemStack.isSameItem(slotStack, stack))
         {
             int count = Math.min(stack.getCount(), slotStack.getCount());
 
@@ -351,9 +351,26 @@ public abstract class AbstractInventory implements Container, IReadWriteNBT
     @Nonnull
     public ItemStack takeItem(@Nonnull ItemStack stack, boolean simulate)
     {
-        ItemStack stackCopy = stack.copy();
+        return takeItem(stack, 0, getContainerSize() - 1, simulate);
+    }
 
-        for (int i = getContainerSize() - 1; i >= 0 && !stackCopy.isEmpty(); i--)
+    /**
+     * Tries to take the given item stack from the given slot range (inclusive).
+     *
+     * @param stack the item stack to take.
+     * @param startIndex inclusive start slot.
+     * @param endIndex inclusive end slot.
+     * @param simulate whether to simulate the take.
+     * @return the item stack that was taken.
+     */
+    @Nonnull
+    public ItemStack takeItem(@Nonnull ItemStack stack, int startIndex, int endIndex, boolean simulate)
+    {
+        ItemStack stackCopy = stack.copy();
+        int start = Math.max(0, startIndex);
+        int end = Math.min(getContainerSize() - 1, endIndex);
+
+        for (int i = end; i >= start && !stackCopy.isEmpty(); i--)
         {
             stackCopy.shrink(takeItem(stackCopy, i, simulate).getCount());
         }
@@ -390,7 +407,7 @@ public abstract class AbstractInventory implements Container, IReadWriteNBT
         {
             ItemStack slotStack = getItem(i);
 
-            if (ItemStack.isSameItemSameComponents(slotStack, stack))
+            if (ItemStack.isSameItem(slotStack, stack))
             {
                 count += slotStack.getCount();
             }

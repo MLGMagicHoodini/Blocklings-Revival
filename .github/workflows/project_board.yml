@@ -99,11 +99,11 @@ jobs:
 
               // ── Testing ───────────────────────────────────────────────────
               } else if (addedLabel === "⚠️ Testing") {
-                targetStatus = "Testing";
+                targetStatus = "⚠️ Testing Phase ⚠️";
 
               // ── Done ──────────────────────────────────────────────────────
               } else if (addedLabel === "✅ Fixed" || addedLabel === "📋 Finished") {
-                targetStatus = "Finished";
+                targetStatus = "✅ Finished ✅";
 
               // ── Denied ────────────────────────────────────────────────────
               } else if (addedLabel === "❌ Denied") {
@@ -113,7 +113,7 @@ jobs:
             } else if (action === "closed") {
               // Closed with a done label → Finished; otherwise → Denied
               if (labels.includes("✅ Fixed") || labels.includes("📋 Finished")) {
-                targetStatus = "Finished";
+                targetStatus = "✅ Finished ✅";
               } else {
                 targetStatus = "Denied";
               }

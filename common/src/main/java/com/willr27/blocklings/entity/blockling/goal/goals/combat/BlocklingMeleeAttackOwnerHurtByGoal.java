@@ -49,6 +49,9 @@ public class BlocklingMeleeAttackOwnerHurtByGoal extends BlocklingMeleeAttackGoa
             return false;
         }
 
+        // Owner still fighting this mob — clear transient path "bad" marks.
+        badTargets.remove(ownersAttacker);
+
         if (!isValidTarget(ownersAttacker))
         {
             return false;

@@ -99,6 +99,7 @@ public class ContainerInfo
     {
         setBlockPos(new BlockPos(containerInfoTag.getInt("x"), containerInfoTag.getInt("y"), containerInfoTag.getInt("z")));
         setBlock(BuiltInRegistries.BLOCK.get(ResourceLocation.parse(containerInfoTag.getString("block"))));
+        sides.clear();
         int size = containerInfoTag.getInt("sides");
 
         for (int i = 0; i < size; i++)
@@ -134,6 +135,7 @@ public class ContainerInfo
     {
         setBlockPos(buf.readBlockPos());
         setBlock(BuiltInRegistries.BLOCK.get(buf.readResourceLocation()));
+        sides.clear();
         int size = buf.readVarInt();
 
         for (int i = 0; i < size; i++)

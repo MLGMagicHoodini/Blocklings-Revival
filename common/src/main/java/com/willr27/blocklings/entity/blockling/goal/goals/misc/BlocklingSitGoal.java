@@ -10,7 +10,11 @@ import java.util.EnumSet;
 import java.util.UUID;
 
 /**
- * Sets the blockling to sit.
+ * Sets the blockling to sit while the Sit task is enabled.
+ * Disable the Sit task to stand up and allow Follow / other MOVE goals again.
+ * <p>
+ * Registered at GoalSelector priority 1 (after Float) so MOVE/JUMP flags stay locked
+ * regardless of Sit's position in the task list.
  */
 public class BlocklingSitGoal extends BlocklingGoal
 {
@@ -29,28 +33,27 @@ public class BlocklingSitGoal extends BlocklingGoal
     @Override
     public boolean canUse()
     {
-        if (!super.canUse())
-        {
-            return false;
-        }
-
-        return true;
+        return super.canUse();
     }
 
     @Override
     public boolean canContinueToUse()
     {
+        // Stay sitting for as long as the Sit task remains enabled.
         return super.canContinueToUse();
+    }
+
+    @Override
+    public boolean isInterruptable()
+    {
+        return false;
     }
 
     @Override
     public void start()
     {
         super.start();
-
-        blockling.getNavigation().stop();
-        blockling.setInSittingPose(true);
-        blockling.setOrderedToSit(true);
+        forceSit();
     }
 
     @Override
@@ -60,14 +63,21 @@ public class BlocklingSitGoal extends BlocklingGoal
 
         blockling.setInSittingPose(false);
         blockling.setOrderedToSit(false);
+        blockling.getNavigation().stop();
     }
 
     @Override
     public void tick()
     {
         super.tick();
+        forceSit();
+    }
 
+    private void forceSit()
+    {
         blockling.getNavigation().stop();
+        blockling.getMoveControl().setWantedPosition(blockling.getX(), blockling.getY(), blockling.getZ(), 0.0);
+        blockling.setDeltaMovement(0.0, blockling.getDeltaMovement().y, 0.0);
 
         if (!blockling.isInSittingPose())
         {

@@ -7,8 +7,8 @@ import com.willr27.blocklings.entity.blockling.skill.info.SkillInfo;
 import com.willr27.blocklings.entity.blockling.skill.skills.*;
 import com.willr27.blocklings.util.IReadWriteNBT;
 import com.willr27.blocklings.util.Version;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.network.PacketBuffer;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -104,15 +104,15 @@ public class BlocklingSkills implements IReadWriteNBT
     }
 
     @Override
-    public CompoundTag writeToNBT(@Nonnull CompoundTag skillsTag)
+    public CompoundNBT writeToNBT(@Nonnull CompoundNBT skillsTag)
     {
         for (SkillGroup skillGroup : skillGroups)
         {
-            CompoundTag groupTag = new CompoundTag();
+            CompoundNBT groupTag = new CompoundNBT();
 
             for (Skill skill : skillGroup.getSkills())
             {
-                CompoundTag skillTag = new CompoundTag();
+                CompoundNBT skillTag = new CompoundNBT();
 
                 skillTag.putInt("state", skill.getState().ordinal());
 
@@ -126,11 +126,11 @@ public class BlocklingSkills implements IReadWriteNBT
     }
 
     @Override
-    public void readFromNBT(@Nonnull CompoundTag skillsTag, @Nonnull Version tagVersion)
+    public void readFromNBT(@Nonnull CompoundNBT skillsTag, @Nonnull Version tagVersion)
     {
         for (SkillGroup skillGroup : skillGroups)
         {
-            CompoundTag groupTag = (CompoundTag) skillsTag.get(skillGroup.info.id.toString());
+            CompoundNBT groupTag = (CompoundNBT) skillsTag.get(skillGroup.info.id.toString());
 
             if (groupTag == null)
             {
@@ -139,7 +139,7 @@ public class BlocklingSkills implements IReadWriteNBT
 
             for (Skill skill : skillGroup.getSkills())
             {
-                CompoundTag skillTag = (CompoundTag) groupTag.get(skill.info.id.toString());
+                CompoundNBT skillTag = (CompoundNBT) groupTag.get(skill.info.id.toString());
 
                 if (skillTag == null)
                 {
@@ -156,7 +156,7 @@ public class BlocklingSkills implements IReadWriteNBT
      *
      * @param buf the buffer to write to.
      */
-    public void encode(@Nonnull FriendlyByteBuf buf)
+    public void encode(@Nonnull PacketBuffer buf)
     {
         for (SkillGroup skillGroup : skillGroups)
         {
@@ -172,7 +172,7 @@ public class BlocklingSkills implements IReadWriteNBT
      *
      * @param buf the buffer to read from.
      */
-    public void decode(@Nonnull FriendlyByteBuf buf)
+    public void decode(@Nonnull PacketBuffer buf)
     {
         for (SkillGroup skillGroup : skillGroups)
         {

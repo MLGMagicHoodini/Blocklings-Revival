@@ -5,11 +5,11 @@ import com.willr27.blocklings.entity.blockling.goal.config.iteminfo.ItemInfo;
 import com.willr27.blocklings.entity.blockling.task.BlocklingTasks;
 import com.willr27.blocklings.entity.blockling.task.config.ItemConfigurationTypeProperty;
 import com.willr27.blocklings.inventory.AbstractInventory;
+import com.willr27.blocklings.inventory.BlocklingItemHandler;
+import net.minecraft.core.Direction;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.core.Direction;
-import com.willr27.blocklings.inventory.BlocklingItemHandler;
 
 import javax.annotation.Nonnull;
 import java.util.UUID;
@@ -32,131 +32,107 @@ public class BlocklingTakeContainerGoal extends BlocklingContainerGoal
     @Override
     protected boolean tryTransferItems(@Nonnull ContainerInfo containerInfo, boolean simulate)
     {
-        BlockEntity BlockEntity = containerAsBlockEntity(containerInfo);
+        BlockEntity blockEntity = containerAsBlockEntity(containerInfo);
 
-        if (BlockEntity == null)
+        if (blockEntity == null)
         {
             return false;
         }
 
         AbstractInventory inv = blockling.getEquipment();
         int remainingTakeAmount = getTransferAmount();
+        boolean useStopThresholds = isEnforcingStopThresholds();
 
-        // Loop through each item and try to take it from the container.
         for (ItemInfo itemInfo : itemInfoSet)
         {
-            // If we have taken all the items we can then stop.
             if (remainingTakeAmount <= 0)
             {
                 break;
             }
 
-            int startInventoryAmount = itemInfo.getStartInventoryAmount() != null ? itemInfo.getStartInventoryAmount() : Integer.MAX_VALUE;
-            int startContainerAmount = itemInfo.getStartContainerAmount() != null ? itemInfo.getStartContainerAmount() : 0;
-            int stopInventoryAmount = itemInfo.getStopInventoryAmount() != null ? itemInfo.getStopInventoryAmount() : Integer.MAX_VALUE;
-            int stopContainerAmount = itemInfo.getStopContainerAmount() != null ? itemInfo.getStopContainerAmount() : 0;
             Item item = itemInfo.getItem();
 
             ItemStack remainingStack = new ItemStack(item, remainingTakeAmount);
             int amountOfSpaceInInventoryForItem = remainingStack.getCount() - inv.addItem(remainingStack, true).getCount();
 
-            // If there is no space in the inventory for the item then skip it.
             if (amountOfSpaceInInventoryForItem == 0)
             {
                 continue;
             }
 
-            // Loop through each selected side of the container (in priority order) and try to take the item from it.
             for (Direction direction : containerInfo.getSides())
             {
-                // If there is no space in the inventory for the item then skip it. We need to check again here as we
-                // may have taken some items from the container in the previous loop.
                 if (amountOfSpaceInInventoryForItem == 0)
                 {
                     continue;
                 }
 
-                BlocklingItemHandler itemHandler = getItemHandler(BlockEntity, direction);
+                BlocklingItemHandler itemHandler = getItemHandler(blockEntity, direction);
 
-                // Something has probably gone wrong if the item handler is null, but we have to check.
                 if (itemHandler == null)
-                {
-                    return false;
-                }
-
-                // Skip any items that are not in the container.
-                if (itemConfigurationTypeProperty.getType() == ItemConfigurationTypeProperty.Type.SIMPLE && !hasItemInContainer(itemHandler, item))
                 {
                     continue;
                 }
 
-                // If we are using the advanced configuration check the item's inventory and container amounts.
+                if (!hasItemInContainer(itemHandler, item))
+                {
+                    continue;
+                }
+
+                int amountAllowed = remainingTakeAmount;
+
                 if (itemConfigurationTypeProperty.getType() == ItemConfigurationTypeProperty.Type.ADVANCED)
                 {
-                    int inventoryAmount = countItemsInInventory(item);
-                    int containerAmount = countItemsInContainer(itemHandler, item);
+                    amountAllowed = getAdvancedTakeAmount(itemInfo, itemHandler, item, useStopThresholds);
 
-                    // If the task is currently executing then we want to check if the stop amounts have been reached.
-                    if (getState() == State.ACTIVE)
+                    if (amountAllowed <= 0)
                     {
-                        if (inventoryAmount >= stopInventoryAmount || containerAmount <= stopContainerAmount)
-                        {
-                            continue;
-                        }
+                        continue;
                     }
-                    // If the task is not currently executing then we want to check if the start amounts have been reached.
-                    else
-                    {
-                        if (inventoryAmount >= startInventoryAmount || containerAmount <= startContainerAmount)
-                        {
-                            continue;
-                        }
-                    }
-
-                    // Make sure we don't deposit more items than the user has configured.
-                    remainingTakeAmount = Math.min(remainingTakeAmount, Math.min(stopInventoryAmount - inventoryAmount, containerAmount - stopContainerAmount));
                 }
 
-                // If we have taken all the items we can then stop.
-                if (remainingTakeAmount <= 0)
+                amountAllowed = Math.min(amountAllowed, amountOfSpaceInInventoryForItem);
+
+                if (amountAllowed <= 0)
                 {
-                    break;
+                    continue;
                 }
 
-                // Only try to take what is needed and the blockling has room for.
-                int amountToTake = Math.min(remainingTakeAmount, amountOfSpaceInInventoryForItem);
-                ItemStack stackLeftToTake = new ItemStack(item, amountToTake);
+                ItemStack stackLeftToTake = new ItemStack(item, amountAllowed);
 
-                // Try extract as many items as possible and update the stack to be the remaining stack. Extract first
-                // in case the item handler has special rules that prevent an item being extracted, e.g. a machine that
-                // prevents items being extracted through the top.
                 for (int slot = itemHandler.getSlots() - 1; slot >= 0 && !stackLeftToTake.isEmpty(); slot--)
                 {
-                    // Shrink the stack left to take by the amount extracted.
                     stackLeftToTake.shrink(itemHandler.extractItem(slot, stackLeftToTake.getCount(), simulate).getCount());
                 }
 
-                // Calculate the amount of items we have taken.
-                int amountTaken = amountToTake - stackLeftToTake.getCount();
+                int amountTaken = amountAllowed - stackLeftToTake.getCount();
 
-                // If we have not taken any items then continue to the next direction.
                 if (amountTaken == 0)
                 {
                     continue;
                 }
 
-                // If we are not simulating then add the items to the blockling's inventory.
                 if (!simulate)
                 {
-                    inv.addItem(new ItemStack(item, amountToTake), false);
+                    ItemStack taken = new ItemStack(item, amountTaken);
+                    ItemStack leftover = inv.addItem(taken);
+                    if (!leftover.isEmpty())
+                    {
+                        for (int slot = 0; slot < itemHandler.getSlots() && !leftover.isEmpty(); slot++)
+                        {
+                            leftover = itemHandler.insertItem(slot, leftover, false);
+                        }
+                        if (!leftover.isEmpty())
+                        {
+                            blockling.dropItemStack(leftover);
+                        }
+                    }
                 }
                 else
                 {
-                    // If we are here then we are simulating and have taken an item so can return true.
                     return true;
                 }
 
-                // Update the amount of items we have taken.
                 remainingTakeAmount -= amountTaken;
                 amountOfSpaceInInventoryForItem -= amountTaken;
             }
@@ -165,33 +141,122 @@ public class BlocklingTakeContainerGoal extends BlocklingContainerGoal
         return remainingTakeAmount < getTransferAmount();
     }
 
+    /**
+     * @return how many of this item may be taken under advanced start/stop rules, or 0 if none.
+     */
+    private int getAdvancedTakeAmount(@Nonnull ItemInfo itemInfo, @Nonnull BlocklingItemHandler itemHandler, @Nonnull Item item, boolean useStopThresholds)
+    {
+        int inventoryAmount = countItemsInInventory(item);
+        int containerAmount = countItemsInContainer(itemHandler, item);
+
+        Integer startInv = itemInfo.getStartInventoryAmount();
+        Integer stopInv = itemInfo.getStopInventoryAmount();
+        Integer startCont = itemInfo.getStartContainerAmount();
+        Integer stopCont = itemInfo.getStopContainerAmount();
+
+        if (useStopThresholds)
+        {
+            // Stop when inventory reached fill amount, or container drained to keep-amount.
+            if (stopInv != null && inventoryAmount >= stopInv)
+            {
+                return 0;
+            }
+            if (stopCont != null && containerAmount <= stopCont)
+            {
+                return 0;
+            }
+
+            int byInv = stopInv != null ? stopInv - inventoryAmount : Integer.MAX_VALUE;
+            int byCont = stopCont != null ? containerAmount - stopCont : containerAmount;
+            return Math.max(0, Math.min(byInv, byCont));
+        }
+
+        if (startInv != null && inventoryAmount >= startInv)
+        {
+            return 0;
+        }
+        if (startCont != null && containerAmount <= startCont)
+        {
+            return 0;
+        }
+
+        if (stopInv != null && inventoryAmount >= stopInv)
+        {
+            return 0;
+        }
+        if (stopCont != null && containerAmount <= stopCont)
+        {
+            return 0;
+        }
+
+        int byInv = stopInv != null ? stopInv - inventoryAmount : Integer.MAX_VALUE;
+        int byCont = stopCont != null ? containerAmount - stopCont : containerAmount;
+        return Math.max(0, Math.min(byInv, byCont));
+    }
+
     @Override
     public boolean hasItemsToTransfer()
     {
         for (ItemInfo itemInfo : itemInfoSet)
         {
+            Item item = itemInfo.getItem();
+
+            if (itemConfigurationTypeProperty.getType() == ItemConfigurationTypeProperty.Type.ADVANCED)
+            {
+                Integer startInv = itemInfo.getStartInventoryAmount();
+                Integer stopInv = itemInfo.getStopInventoryAmount();
+                int inventoryAmount = countItemsInInventory(item);
+
+                if (stopInv != null && inventoryAmount >= stopInv)
+                {
+                    continue;
+                }
+                if (startInv != null && inventoryAmount >= startInv)
+                {
+                    continue;
+                }
+            }
+
             for (ContainerInfo containerInfo : containerInfos)
             {
-                BlockEntity BlockEntity = containerAsBlockEntity(containerInfo);
+                BlockEntity blockEntity = containerAsBlockEntity(containerInfo);
 
-                if (BlockEntity == null)
+                if (blockEntity == null || !containerInfo.isConfigured())
                 {
-                    return false;
+                    continue;
                 }
 
                 for (Direction direction : containerInfo.getSides())
                 {
-                    BlocklingItemHandler itemHandler = getItemHandler(BlockEntity, direction);
+                    BlocklingItemHandler itemHandler = getItemHandler(blockEntity, direction);
 
                     if (itemHandler == null)
                     {
-                        return false;
+                        continue;
                     }
 
-                    if (hasItemInContainer(itemHandler, itemInfo.getItem()))
+                    if (!hasItemInContainer(itemHandler, item))
                     {
-                        return true;
+                        continue;
                     }
+
+                    if (itemConfigurationTypeProperty.getType() == ItemConfigurationTypeProperty.Type.ADVANCED)
+                    {
+                        Integer startCont = itemInfo.getStartContainerAmount();
+                        Integer stopCont = itemInfo.getStopContainerAmount();
+                        int containerAmount = countItemsInContainer(itemHandler, item);
+
+                        if (stopCont != null && containerAmount <= stopCont)
+                        {
+                            continue;
+                        }
+                        if (startCont != null && containerAmount <= startCont)
+                        {
+                            continue;
+                        }
+                    }
+
+                    return true;
                 }
             }
         }

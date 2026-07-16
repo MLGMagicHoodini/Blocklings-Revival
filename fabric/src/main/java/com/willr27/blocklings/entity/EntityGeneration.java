@@ -19,18 +19,21 @@ import net.minecraft.world.level.levelgen.Heightmap;
  * Natural spawn registration for Fabric.
  * Mirrors NeoForge biome modifiers:
  * <ul>
- *   <li>overworld / nether / end — weight 100</li>
- *   <li>plains / forest — extra weight 40 (stacked on overworld)</li>
+ *   <li>overworld — weight 180</li>
+ *   <li>plains / forest — extra weight 80 (stacked on overworld)</li>
+ *   <li>nether — weight 80, end — weight 60</li>
  * </ul>
  * Some biomes (oceans, beaches, stony shore, etc.) have creatureSpawnProbability = 0, which means
  * adding a CREATURE spawn entry alone never produces pack spawning. We bump that probability so
  * blocklings (and other creatures) can actually attempt to spawn there.
  */
 public final class EntityGeneration {
-    private static final int SPAWN_WEIGHT = 100;
-    private static final int BIOME_BONUS_WEIGHT = 40;
+    private static final int SPAWN_WEIGHT = 24;
+    private static final int BIOME_BONUS_WEIGHT = 10;
+    private static final int NETHER_WEIGHT = 12;
+    private static final int END_WEIGHT = 10;
     private static final int SPAWN_MIN = 1;
-    private static final int SPAWN_MAX = 3;
+    private static final int SPAWN_MAX = 2;
     private static final float MIN_CREATURE_SPAWN_PROBABILITY = 0.1f;
 
     private EntityGeneration() {
@@ -52,16 +55,16 @@ public final class EntityGeneration {
                         context.getSpawnSettings().setCreatureSpawnProbability(MIN_CREATURE_SPAWN_PROBABILITY));
 
         addSpawns(BiomeTags.IS_OVERWORLD, SPAWN_WEIGHT);
-        addSpawns(BiomeTags.IS_NETHER, SPAWN_WEIGHT);
-        addSpawns(BiomeTags.IS_END, SPAWN_WEIGHT);
-        // Match NeoForge plains/forest biome_modifier extras (weight 40 stacked on overworld).
+        addSpawns(BiomeTags.IS_NETHER, NETHER_WEIGHT);
+        addSpawns(BiomeTags.IS_END, END_WEIGHT);
+        // Match NeoForge plains/forest biome_modifier extras (weight 80 stacked on overworld).
         // BiomeTags.IS_PLAINS does not exist in 1.21.1 — use the same #minecraft:is_plains tag as NeoForge JSON.
         addSpawns(TagKey.create(net.minecraft.core.registries.Registries.BIOME,
                 ResourceLocation.withDefaultNamespace("is_plains")), BIOME_BONUS_WEIGHT);
         addSpawns(BiomeTags.IS_FOREST, BIOME_BONUS_WEIGHT);
 
-        Blocklings.LOGGER.info("Blocklings natural spawns registered (weight {}, plains/forest +{}, groups {}-{})",
-                SPAWN_WEIGHT, BIOME_BONUS_WEIGHT, SPAWN_MIN, SPAWN_MAX);
+        Blocklings.LOGGER.info("Blocklings natural spawns registered (overworld {}, plains/forest +{}, nether {}, end {}, groups {}-{})",
+                SPAWN_WEIGHT, BIOME_BONUS_WEIGHT, NETHER_WEIGHT, END_WEIGHT, SPAWN_MIN, SPAWN_MAX);
         BlocklingSpawnDiagnostics.LOG.info("[SpawnDebug] registration complete — dump runs on server start");
     }
 

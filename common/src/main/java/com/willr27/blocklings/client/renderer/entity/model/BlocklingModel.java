@@ -134,13 +134,32 @@ public class BlocklingModel extends EntityModel<BlocklingEntity> implements Arme
             leftArmSwing -= blockling.getEquipment().getHandStack(InteractionHand.OFF_HAND).isEmpty() ? -attackSwing : attackSwing;
         }
 
+        // Vanilla LivingEntity.swing() progress (deposit/take pumps this every few ticks).
+        float vanillaSwing = blockling.getAttackAnim(partialTicks);
+        if (vanillaSwing > 0.0F) {
+            float swing = Mth.sin(Mth.sqrt(vanillaSwing) * (float) Math.PI);
+            rightArmSwing += -swing * 1.9F;
+            leftArmSwing += swing * 1.2F;
+            rightArmSwingAmount = 0.0F;
+            leftArmSwingAmount = 0.0F;
+        }
+
         if (blockling.getActions().gather.isRunning()) {
-            if (hand == BlocklingHand.MAIN || hand == BlocklingHand.BOTH) {
-                rightArmSwing = Mth.cos(ageInTicks + (float) Math.PI) * 1.0F;
+            // One full arm cycle per gather progress (deposit/take interval, or mining break).
+            // If InteractionHand has not synced yet (NONE), still animate both arms.
+            float percent = Mth.clamp(blockling.getActions().gather.percentThroughAction(), 0.0F, 1.0F);
+            float gatherSwing = Mth.sin(percent * (float) Math.PI) * 1.6F;
+            boolean swingRight = hand == BlocklingHand.NONE || hand == BlocklingHand.MAIN || hand == BlocklingHand.BOTH;
+            boolean swingLeft = hand == BlocklingHand.NONE || hand == BlocklingHand.OFF || hand == BlocklingHand.BOTH;
+
+            if (swingRight) {
+                rightArmSwing = gatherSwing;
+                rightArmSwingAmount = 0.0F;
             }
 
-            if (hand == BlocklingHand.OFF || hand == BlocklingHand.BOTH) {
-                leftArmSwing = Mth.cos(ageInTicks + (float) Math.PI) * 1.0F;
+            if (swingLeft) {
+                leftArmSwing = -gatherSwing;
+                leftArmSwingAmount = 0.0F;
             }
         }
 

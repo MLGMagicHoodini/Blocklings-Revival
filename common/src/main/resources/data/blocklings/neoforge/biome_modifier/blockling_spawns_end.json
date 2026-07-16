@@ -3,7 +3,7 @@
   "biomes": "#minecraft:is_end",
   "spawners": {
     "type": "blocklings:blockling",
-    "weight": 30,
+    "weight": 10,
     "minCount": 1,
     "maxCount": 2
   }

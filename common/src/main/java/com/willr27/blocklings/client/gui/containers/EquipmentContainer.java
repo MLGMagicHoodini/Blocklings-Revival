@@ -58,27 +58,40 @@ public class EquipmentContainer extends AbstractContainerMenu
         return true;
     }
 
+    /** Blockling tool + bag slots occupy indices [0, PLAYER_INV_START). */
+    private static final int PLAYER_INV_START = 26;
+
     @Override
     @Nonnull
     public ItemStack quickMoveStack(@Nonnull Player player, int clickedSlotIndex)
     {
         ItemStack remainder = ItemStack.EMPTY;
+        if (clickedSlotIndex < 0 || clickedSlotIndex >= this.slots.size())
+        {
+            return remainder;
+        }
+
         Slot clickedSlot = this.slots.get(clickedSlotIndex);
 
-        if (clickedSlot != null && clickedSlot.hasItem())
+        if (clickedSlot.hasItem())
         {
             ItemStack clickedSlotStack = clickedSlot.getItem();
             remainder = clickedSlotStack.copy();
 
-            if (clickedSlotIndex >= 26 && clickedSlotIndex <= 62)
+            // moveItemStackTo end index is exclusive; slots are 0 .. size-1.
+            int playerInvEnd = this.slots.size();
+
+            if (clickedSlotIndex >= PLAYER_INV_START)
             {
-                if (!this.moveItemStackTo(clickedSlotStack, 0, 26, false))
+                // Player inventory / hotbar → blockling equipment
+                if (!this.moveItemStackTo(clickedSlotStack, 0, PLAYER_INV_START, false))
                 {
                     return ItemStack.EMPTY;
                 }
             }
-            else if (!this.moveItemStackTo(clickedSlotStack, 26, 63, true))
+            else if (!this.moveItemStackTo(clickedSlotStack, PLAYER_INV_START, playerInvEnd, true))
             {
+                // Blockling equipment → player inventory / hotbar
                 return ItemStack.EMPTY;
             }
 

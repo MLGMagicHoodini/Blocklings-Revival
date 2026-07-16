@@ -57,6 +57,7 @@ public class BlocklingsFabric implements ModInitializer {
         FabricDimensionEvents.register();
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            com.willr27.blocklings.util.EntityUtil.onWorldAvailable(server.overworld());
             com.willr27.blocklings.util.ToolUtil.init();
             Blocklings.LOGGER.info("Blocklings server starting — integrations: {}",
                     com.willr27.blocklings.compat.ModCompatRegistry.activeCompatSummary());

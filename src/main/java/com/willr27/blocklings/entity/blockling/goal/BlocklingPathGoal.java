@@ -4,8 +4,8 @@ import com.willr27.blocklings.entity.blockling.BlocklingEntity;
 import com.willr27.blocklings.entity.blockling.task.BlocklingTasks;
 import com.willr27.blocklings.util.BlockUtil;
 import com.willr27.blocklings.util.EntityUtil;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.pathfinder.Path;
+import net.minecraft.pathfinding.Path;
+import net.minecraft.util.math.BlockPos;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -218,7 +218,7 @@ public abstract class BlocklingPathGoal extends BlocklingGoal
      */
     public boolean isBadPathTargetPos(@Nonnull BlockPos blockPos)
     {
-        return badPathTargetChunks.get(new BlockChunk(blockPos, level)) != null;
+        return badPathTargetChunks.get(new BlockChunk(blockPos, world)) != null;
     }
 
     /**
@@ -239,7 +239,7 @@ public abstract class BlocklingPathGoal extends BlocklingGoal
      */
     public void markPathTargetPosBad(@Nonnull BlockPos blockPos)
     {
-        badPathTargetChunks.put(new BlockChunk(blockPos, level), BAD_PATH_TARGET_COOLDOWN_INTERVAL);
+        badPathTargetChunks.put(new BlockChunk(blockPos, world), BAD_PATH_TARGET_COOLDOWN_INTERVAL);
     }
 
     /**

@@ -11,8 +11,6 @@ import java.util.Random;
 @OnlyIn(Dist.CLIENT)
 public class Textures
 {
-    private static final ResourceLocation WIDGETS_LOCATION = ResourceLocation.withDefaultNamespace("textures/gui/widgets.png");
-
     public static class Common
     {
         public static final ResourceLocation COMMON = BlocklingsResourceLocation.of("textures/gui/common_widgets.png");
@@ -20,8 +18,9 @@ public class Textures
         public static final Texture BAR_RAISED = new Texture(COMMON, 0, 48, 256, 20);
         public static final Texture BAR_FLAT = new Texture(COMMON, 0, 68, 256, 20);
 
-        public static final Texture BUTTON = new Texture(WIDGETS_LOCATION, 0, 66, 200, 20);
-        public static final Texture BUTTON_HOVERED = new Texture(WIDGETS_LOCATION, 0, 86, 200, 20);
+        // Vanilla widgets.png was removed in 1.20.2+; use the mod atlas.
+        public static final Texture BUTTON = new Texture(COMMON, 0, 48, 200, 20);
+        public static final Texture BUTTON_HOVERED = new Texture(COMMON, 0, 68, 200, 20);
 
         public static final Texture NODE_UNPRESSED = new Texture(COMMON, 46, 0, 12, 12);
         public static final Texture NODE_PRESSED = new Texture(COMMON, 58, 0, 12, 12);

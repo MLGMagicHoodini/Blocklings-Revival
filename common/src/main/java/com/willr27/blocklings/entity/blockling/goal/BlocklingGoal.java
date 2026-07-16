@@ -4,6 +4,7 @@ import com.willr27.blocklings.client.gui.control.BaseControl;
 import com.willr27.blocklings.client.gui.control.controls.config.WhitelistConfigControl;
 import com.willr27.blocklings.client.gui.control.controls.panels.TabbedPanel;
 import com.willr27.blocklings.entity.blockling.BlocklingEntity;
+import com.willr27.blocklings.entity.blockling.goal.goals.misc.BlocklingSitGoal;
 import com.willr27.blocklings.entity.blockling.task.BlocklingTasks;
 import com.willr27.blocklings.entity.blockling.task.Task;
 import com.willr27.blocklings.entity.blockling.task.config.Property;
@@ -130,6 +131,12 @@ public abstract class BlocklingGoal extends Goal
             return false;
         }
 
+        // Only block other goals while the blockling is actually sitting (Sit task ACTIVE).
+        if (!(this instanceof BlocklingSitGoal) && blockling.isOrderedToSit())
+        {
+            return false;
+        }
+
         return true;
     }
 
@@ -137,6 +144,11 @@ public abstract class BlocklingGoal extends Goal
     public boolean canContinueToUse()
     {
         if (state == State.DISABLED)
+        {
+            return false;
+        }
+
+        if (!(this instanceof BlocklingSitGoal) && blockling.isOrderedToSit())
         {
             return false;
         }
@@ -169,6 +181,11 @@ public abstract class BlocklingGoal extends Goal
     @OnlyIn(Dist.CLIENT)
     public void addConfigTabControls(@Nonnull TabbedPanel tabbedPanel)
     {
+        if (this instanceof com.willr27.blocklings.entity.blockling.goal.goals.gather.BlocklingMineGoal mineGoal)
+        {
+            mineGoal.ensureOreWhitelistEntries(false);
+        }
+
         for (GoalWhitelist whitelist : whitelists)
         {
             if (whitelist.isUnlocked())
@@ -193,6 +210,16 @@ public abstract class BlocklingGoal extends Goal
     }
 
     /**
+     * @return a short human-readable description of what the goal is currently doing,
+     *         used by the {@code /blocklingdevtool tasktest} logger. Subclasses add target info.
+     */
+    @Nonnull
+    public String getDebugStatus()
+    {
+        return state.toString();
+    }
+
+    /**
      * Sets the current state and syncs to the client/server.
      *
      * @param state the new state.
@@ -210,7 +237,14 @@ public abstract class BlocklingGoal extends Goal
      */
     public void setState(@Nonnull State state, boolean sync)
     {
+        State previous = this.state;
         this.state = state;
+
+        if (previous != state && !world.isClientSide())
+        {
+            com.willr27.blocklings.command.BlocklingTaskLogger.event(
+                    blockling, "GOAL", getClass().getSimpleName() + ": " + previous + " -> " + state);
+        }
 
         if (sync)
         {

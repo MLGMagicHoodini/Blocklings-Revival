@@ -2,12 +2,7 @@ package com.willr27.blocklings.entity;
 
 import com.willr27.blocklings.Blocklings;
 import com.willr27.blocklings.entity.blockling.BlocklingEntity;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.levelgen.Heightmap;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.Mod;
-/*import net.minecraft.entity.EntityClassification;
+import net.minecraft.entity.EntityClassification;
 import net.minecraft.entity.EntitySpawnPlacementRegistry;
 import net.minecraft.entity.EntityType;
 import net.minecraft.util.RegistryKey;
@@ -17,7 +12,7 @@ import net.minecraft.world.gen.Heightmap;
 import net.minecraftforge.common.world.MobSpawnInfoBuilder;
 import net.minecraftforge.event.world.BiomeLoadingEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;*/
+import net.minecraftforge.fml.common.Mod;
 
 import java.util.Arrays;
 import java.util.List;

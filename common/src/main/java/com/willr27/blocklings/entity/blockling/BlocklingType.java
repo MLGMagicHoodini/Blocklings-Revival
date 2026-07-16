@@ -127,7 +127,10 @@ public class BlocklingType
         LAPIS.addFoods(Items.LAPIS_LAZULI);
         LAPIS.addFoods(Blocks.LAPIS_ORE, Blocks.LAPIS_BLOCK);
         LAPIS.spawnPredicates.add((blockling, world) -> isInWorld(blockling, world, Level.OVERWORLD));
-        LAPIS.spawnPredicates.add((blockling, world) -> blockNearbyIs(blockling, world, 12, Blocks.LAPIS_ORE));
+        // Stay underground: no grass underfoot, and ore must be near the same Y (not 12 blocks below trees).
+        LAPIS.spawnPredicates.add((blockling, world) -> !blockBelowIs(blockling, world, Blocks.GRASS_BLOCK));
+        LAPIS.spawnPredicates.add((blockling, world) -> blockNearbyIs(blockling, world, 8, 3,
+                Blocks.LAPIS_ORE, Blocks.DEEPSLATE_LAPIS_ORE));
 
         GOLD.addFoods(Items.GOLD_INGOT);
         GOLD.addFoods(Blocks.GOLD_ORE, Blocks.GOLD_BLOCK);
@@ -630,13 +633,22 @@ public class BlocklingType
      */
     private static boolean blockNearbyIs(@Nonnull BlocklingEntity blockling, @Nonnull LevelAccessor world, int radius, @Nonnull Block... blocks)
     {
-        int startX = (int) blockling.getX() - radius;
-        int startY = (int) blockling.getY() - radius;
-        int startZ = (int) blockling.getZ() - radius;
+        return blockNearbyIs(blockling, world, radius, radius, blocks);
+    }
 
-        int endX = (int) blockling.getX() + radius;
-        int endY = (int) blockling.getY() + radius;
-        int endZ = (int) blockling.getZ() + radius;
+    /**
+     * @param horizontalRadius cube radius on X/Z
+     * @param verticalRadius max |ΔY| from the blockling (use a small value for cave ores)
+     */
+    private static boolean blockNearbyIs(@Nonnull BlocklingEntity blockling, @Nonnull LevelAccessor world, int horizontalRadius, int verticalRadius, @Nonnull Block... blocks)
+    {
+        int startX = (int) blockling.getX() - horizontalRadius;
+        int startY = (int) blockling.getY() - verticalRadius;
+        int startZ = (int) blockling.getZ() - horizontalRadius;
+
+        int endX = (int) blockling.getX() + horizontalRadius;
+        int endY = (int) blockling.getY() + verticalRadius;
+        int endZ = (int) blockling.getZ() + horizontalRadius;
 
         for (int x = startX; x <= endX; x++)
         {

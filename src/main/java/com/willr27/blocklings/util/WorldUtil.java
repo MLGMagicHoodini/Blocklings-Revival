@@ -1,12 +1,8 @@
 package com.willr27.blocklings.util;
 
-/*import net.minecraft.block.Block;
+import net.minecraft.block.Block;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;*/
-
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
+import net.minecraft.world.World;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -32,10 +28,10 @@ public class WorldUtil
      * @return a tree containing all the blocks that make up the tree.
      */
     @Nonnull
-    public static Tree findTreeFromPos(@Nonnull Level level, @Nonnull BlockPos blockPos, int maxTreeLogsSize, @Nonnull Predicate<BlockPos> isValidLogPos, @Nonnull Predicate<BlockPos> isValidLeavesPos)
+    public static Tree findTreeFromPos(@Nonnull World world, @Nonnull BlockPos blockPos, int maxTreeLogsSize, @Nonnull Predicate<BlockPos> isValidLogPos, @Nonnull Predicate<BlockPos> isValidLeavesPos)
     {
         Tree tree = new Tree();
-        Block logBlock = level.getBlockState(blockPos).getBlock();
+        Block logBlock = world.getBlockState(blockPos).getBlock();
 
         if (!BlockUtil.isLog(logBlock))
         {
@@ -54,7 +50,7 @@ public class WorldUtil
 
             for (BlockPos surroundingPos : BlockUtil.getSurroundingBlockPositions(testBlockPos))
             {
-                Block surroundingLogBlock = level.getBlockState(surroundingPos).getBlock();
+                Block surroundingLogBlock = world.getBlockState(surroundingPos).getBlock();
 
                 if (surroundingLogBlock == logBlock && isValidLogPos.test(surroundingPos))
                 {

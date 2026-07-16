@@ -13,19 +13,14 @@ import com.willr27.blocklings.entity.blockling.goal.config.iteminfo.OrderedItemI
 import com.willr27.blocklings.entity.blockling.goal.goals.container.BlocklingContainerGoal;
 import com.willr27.blocklings.entity.blockling.task.config.Property;
 import com.willr27.blocklings.network.messages.*;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.Level;
-import net.neoforged.neoforge.network.registration.NetworkRegistry;
-/*import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.network.NetworkDirection;
 import net.minecraftforge.fml.network.NetworkRegistry;
-import net.minecraftforge.fml.network.simple.SimpleChannel;*/
+import net.minecraftforge.fml.network.simple.SimpleChannel;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -148,11 +143,11 @@ public class NetworkHandler
      * @param player the player to send the message to.
      * @param message the message to send.
      */
-    public static void sendToClient(Player player, Message message)
+    public static void sendToClient(PlayerEntity player, Message message)
     {
 //        Log.info("Sending to client: " + message.getClass());
 
-        HANDLER.sendTo(message, ((ServerPlayer) player).connection.connection, NetworkDirection.PLAY_TO_CLIENT);
+        HANDLER.sendTo(message, ((ServerPlayerEntity) player).connection.connection, NetworkDirection.PLAY_TO_CLIENT);
     }
 
     /**
@@ -162,9 +157,9 @@ public class NetworkHandler
      * @param message the message to send.
      * @param playersToIgnore the players to not send the message to.
      */
-    public static void sendToAllClients(Level level, Message message, List<Player> playersToIgnore)
+    public static void sendToAllClients(World world, Message message, List<PlayerEntity> playersToIgnore)
     {
-        for (Player player : level.players())
+        for (PlayerEntity player : world.players())
         {
             if (!playersToIgnore.contains(player))
             {
@@ -179,15 +174,15 @@ public class NetworkHandler
      * @param world the world.
      * @param message the message to send.
      */
-    public static void sync(Level level, Message message)
+    public static void sync(World world, Message message)
     {
-        if (level.isClientSide)
+        if (world.isClientSide)
         {
             sendToServer(message);
         }
         else
         {
-            sendToAllClients(level, message, new ArrayList<>());
+            sendToAllClients(world, message, new ArrayList<>());
         }
     }
 }

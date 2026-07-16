@@ -1,10 +1,7 @@
 package com.willr27.blocklings.util;
 
-/*import net.minecraft.block.BlockState;
-import net.minecraft.entity.LivingEntity;*/
-
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.LivingEntity;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

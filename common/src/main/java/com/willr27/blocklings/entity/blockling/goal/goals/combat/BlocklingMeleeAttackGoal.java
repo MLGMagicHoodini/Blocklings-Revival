@@ -114,23 +114,29 @@ public abstract class BlocklingMeleeAttackGoal extends BlocklingTargetGoal<Livin
     @Override
     protected boolean recalcPath(boolean force)
     {
-        if (isBadPathTargetPos(getTarget().blockPosition()))
+        LivingEntity target = getTarget();
+        if (target == null)
         {
             setPathTargetPos(null, null);
-
             return false;
         }
 
-        Path path = blockling.getNavigation().createPath(getTarget(), 0);
-
-        if (path != null && BlockUtil.distanceSq(getTarget().blockPosition(), path.getTarget()) > getRangeSq())
+        if (isInRange(target))
         {
-            path = null;
+            // Already in melee range — keep standing and swinging; do not null the path as "stuck".
+            setPathTargetPos(target.blockPosition(), null);
+            return true;
         }
 
-        setPathTargetPos(getTarget().blockPosition(), path);
+        if (isBadPathTargetPos(target.blockPosition()))
+        {
+            setPathTargetPos(null, null);
+            return false;
+        }
 
-        return true;
+        Path path = blockling.getNavigation().createPath(target, 0);
+        setPathTargetPos(target.blockPosition(), path);
+        return path != null;
     }
 
     /**
@@ -143,8 +149,8 @@ public abstract class BlocklingMeleeAttackGoal extends BlocklingTargetGoal<Livin
     {
         blockling.doHurtTarget(target);
 
-        recalcPath(true);
-
+        // Do not recalcPath here — a failed path after a hit used to mark the target bad
+        // (skeletons/spiders), so combat stopped after one swing.
         blockling.wasLastAttackHunt = false;
     }
 
@@ -154,8 +160,14 @@ public abstract class BlocklingMeleeAttackGoal extends BlocklingTargetGoal<Livin
     protected boolean retainCurrentTargetIfValid()
     {
         LivingEntity current = getTarget();
+        if (current == null)
+        {
+            return false;
+        }
 
-        return current != null && isValidTarget(current);
+        // Allow re-engaging a target that was only marked bad due to a transient path fail.
+        badTargets.remove(current);
+        return isValidTarget(current);
     }
 
     @Override
@@ -200,6 +212,21 @@ public abstract class BlocklingMeleeAttackGoal extends BlocklingTargetGoal<Livin
             return false;
         }
 
+        // Never attack other blocklings — even when the combat whitelist skill is locked
+        // (a locked whitelist otherwise treats every entity as a valid target).
+        if (entity instanceof BlocklingEntity)
+        {
+            return false;
+        }
+
+        // Never attack the owner's own tamed pets (their dog, horse, other companions, etc.).
+        if (entity instanceof net.minecraft.world.entity.OwnableEntity ownable
+                && blockling.getOwner() != null
+                && blockling.getOwner().getUUID().equals(ownable.getOwnerUUID()))
+        {
+            return false;
+        }
+
         if (entity.isDeadOrDying())
         {
             return false;
@@ -212,6 +239,13 @@ public abstract class BlocklingMeleeAttackGoal extends BlocklingTargetGoal<Livin
 
         for (GoalWhitelist whitelist : whitelists)
         {
+            // Keep unlock flag aligned with the combat whitelist skill.
+            boolean skillBought = blockling.getSkills().getSkill(CombatSkills.WHITELIST).isBought();
+            if (whitelist.isUnlocked() != skillBought)
+            {
+                whitelist.setIsUnlocked(skillBought, false);
+            }
+
             if (whitelist.isEntryBlacklisted(entity))
             {
                 return false;
@@ -238,10 +272,6 @@ public abstract class BlocklingMeleeAttackGoal extends BlocklingTargetGoal<Livin
         return 2.5f * 2.5f;
     }
 
-    /**
-     * @param target the target entity.
-     * @return true if the blockling is in range of the target entity.
-     */
     private boolean isInRange(@Nonnull LivingEntity target)
     {
         return blockling.distanceToSqr(target.getX(), target.getY() + target.getBbHeight() / 2.0f, target.getZ()) < getRangeSq();

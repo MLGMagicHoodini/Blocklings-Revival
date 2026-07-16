@@ -46,7 +46,14 @@ public class BlocklingSkills implements IReadWriteNBT
                 {
                     if (goalWhitelist.id.toString().equals(whitelistId))
                     {
-                        goalWhitelist.setIsUnlocked(true, false);
+                        if (task.getGoal() instanceof com.willr27.blocklings.entity.blockling.goal.goals.gather.BlocklingMineGoal mineGoal)
+                        {
+                            mineGoal.ensureOreWhitelistEntries(true);
+                        }
+
+                        // Sync so client + server both enforce the whitelist after purchase
+                        // (otherwise locked=allow-all still ignores disabled entries like wheat).
+                        goalWhitelist.setIsUnlocked(true, true);
                     }
                 });
             }

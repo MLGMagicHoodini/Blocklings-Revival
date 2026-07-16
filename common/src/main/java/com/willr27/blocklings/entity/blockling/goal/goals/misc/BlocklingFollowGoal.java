@@ -5,8 +5,10 @@ import com.willr27.blocklings.entity.blockling.goal.BlocklingGoal;
 import com.willr27.blocklings.entity.blockling.task.BlocklingTasks;
 import com.willr27.blocklings.entity.blockling.task.config.range.IntRangeProperty;
 import com.willr27.blocklings.util.BlocklingsTranslationTextComponent;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.pathfinder.PathType;
 
 import javax.annotation.Nonnull;
@@ -15,52 +17,36 @@ import java.util.UUID;
 
 /**
  * Follows the blockling's owner when out of range.
+ * Teleports when far (vanilla wolf behaviour) so vegetation / bad paths cannot strand it.
  */
 public class BlocklingFollowGoal extends BlocklingGoal
 {
-    /**
-     * The speed modifier.
-     */
-    private final double speedModifier = 1.0;
+    private static final float TELEPORT_DISTANCE = 12.0f;
 
     /**
-     * The distance to stop following at.
+     * Extra blocks beyond {@link #startDistance} before Follow starts.
+     * Without this, work tasks (hunt/mine/…) at ~start range fight Follow and stutter
+     * (same defaults/behaviour as upstream 1.18).
      */
+    private static final int START_RANGE_SLACK = 1;
+
+    private final double speedModifier = 1.0;
+
     @Nonnull
     private final IntRangeProperty stopDistance;
 
-    /**
-     * The distance to start following at.
-     */
     @Nonnull
     private final IntRangeProperty startDistance;
 
-    /**
-     * The navigator used for pathing.
-     */
     @Nonnull
     private final PathNavigation navigation;
 
-    /**
-     * The owner of the blockling.
-     */
     private LivingEntity owner;
 
-    /**
-     * The counter used to work out when to recalc the path.
-     */
     private int timeToRecalcPath;
 
-    /**
-     * The malus from water.
-     */
     private float oldWaterCost;
 
-    /**
-     * @param id the id associated with the goal's task.
-     * @param blockling the blockling.
-     * @param tasks the blockling tasks.
-     */
     public BlocklingFollowGoal(@Nonnull UUID id, @Nonnull BlocklingEntity blockling, @Nonnull BlocklingTasks tasks)
     {
         super(id, blockling, tasks);
@@ -89,7 +75,7 @@ public class BlocklingFollowGoal extends BlocklingGoal
             return false;
         }
 
-        if (shouldDeferToOtherTasks())
+        if (blockling.isOrderedToSit())
         {
             return false;
         }
@@ -104,7 +90,7 @@ public class BlocklingFollowGoal extends BlocklingGoal
         {
             return false;
         }
-        else if (blockling.distanceToSqr(owner) < (double) (startDistance.getValue() * startDistance.getValue()))
+        else if (blockling.distanceToSqr(owner) < (double) (getEffectiveStartDistance() * getEffectiveStartDistance()))
         {
             return false;
         }
@@ -116,6 +102,14 @@ public class BlocklingFollowGoal extends BlocklingGoal
         }
     }
 
+    /**
+     * Start following only after start range + slack so nearby work targets are reachable.
+     */
+    private int getEffectiveStartDistance()
+    {
+        return startDistance.getValue() + START_RANGE_SLACK;
+    }
+
     @Override
     public boolean canContinueToUse()
     {
@@ -124,39 +118,12 @@ public class BlocklingFollowGoal extends BlocklingGoal
             return false;
         }
 
-        if (shouldDeferToOtherTasks())
+        if (owner == null || !owner.isAlive() || owner.isSpectator() || blockling.isOrderedToSit())
         {
             return false;
         }
 
-        if (navigation.isDone())
-        {
-            return false;
-        }
-        else
-        {
-            return !(blockling.distanceToSqr(owner) <= (double) (stopDistance.getValue() * stopDistance.getValue()));
-        }
-    }
-
-    /**
-     * Follow only when sit is disabled and no higher-priority task is currently running.
-     */
-    private boolean shouldDeferToOtherTasks()
-    {
-        if (tasks.isTaskTypeEnabled(BlocklingTasks.SIT))
-        {
-            return true;
-        }
-
-        if (tasks.hasHigherPriorityActiveTask(getTask()))
-        {
-            return true;
-        }
-
-        LivingEntity attackTarget = blockling.getTarget();
-
-        return attackTarget != null && attackTarget.isAlive();
+        return blockling.distanceToSqr(owner) > (double) (stopDistance.getValue() * stopDistance.getValue());
     }
 
     @Override
@@ -184,6 +151,11 @@ public class BlocklingFollowGoal extends BlocklingGoal
     {
         super.tick();
 
+        if (owner == null)
+        {
+            return;
+        }
+
         blockling.getLookControl().setLookAt(owner, 10.0f, (float) blockling.getMaxHeadXRot());
 
         if (--timeToRecalcPath <= 0)
@@ -192,9 +164,70 @@ public class BlocklingFollowGoal extends BlocklingGoal
 
             if (!blockling.isLeashed() && !blockling.isPassenger())
             {
-                navigation.stop();
-                navigation.moveTo(owner, speedModifier);
+                if (blockling.distanceToSqr(owner) >= (double) (TELEPORT_DISTANCE * TELEPORT_DISTANCE))
+                {
+                    teleportToOwner();
+                }
+                else
+                {
+                    navigation.moveTo(owner, speedModifier);
+                }
             }
         }
+    }
+
+    private void teleportToOwner()
+    {
+        BlockPos ownerPos = owner.blockPosition();
+
+        for (int i = 0; i < 10; i++)
+        {
+            int dx = blockling.getRandom().nextInt(7) - 3;
+            int dy = blockling.getRandom().nextInt(3) - 1;
+            int dz = blockling.getRandom().nextInt(7) - 3;
+            if (maybeTeleportTo(ownerPos.getX() + dx, ownerPos.getY() + dy, ownerPos.getZ() + dz))
+            {
+                return;
+            }
+        }
+    }
+
+    private boolean maybeTeleportTo(int x, int y, int z)
+    {
+        if (Math.abs(x - owner.getX()) < 2.0 && Math.abs(z - owner.getZ()) < 2.0)
+        {
+            return false;
+        }
+
+        if (!canTeleportTo(new BlockPos(x, y, z)))
+        {
+            return false;
+        }
+
+        blockling.moveTo(x + 0.5, y, z + 0.5, blockling.getYRot(), blockling.getXRot());
+        navigation.stop();
+        return true;
+    }
+
+    private boolean canTeleportTo(@Nonnull BlockPos pos)
+    {
+        BlockState below = blockling.level().getBlockState(pos.below());
+        if (!below.isSolid())
+        {
+            return false;
+        }
+
+        BlockPos.MutableBlockPos cursor = pos.mutable();
+        for (int i = 0; i < 2; i++)
+        {
+            BlockState state = blockling.level().getBlockState(cursor);
+            if (!state.getCollisionShape(blockling.level(), cursor).isEmpty())
+            {
+                return false;
+            }
+            cursor.move(0, 1, 0);
+        }
+
+        return true;
     }
 }

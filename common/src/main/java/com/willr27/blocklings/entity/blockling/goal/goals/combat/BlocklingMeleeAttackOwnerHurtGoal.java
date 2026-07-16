@@ -49,6 +49,8 @@ public class BlocklingMeleeAttackOwnerHurtGoal extends BlocklingMeleeAttackGoal
             return false;
         }
 
+        badTargets.remove(ownersTarget);
+
         if (!isValidTarget(ownersTarget))
         {
             return false;

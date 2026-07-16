@@ -14,30 +14,31 @@ import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 
 /**
- * Mines the targeted ore/vein.
+ * Mines the targeted ore/vein — finishes the whole vein before looking for another.
  */
 public class BlocklingMineGoal extends BlocklingGatherGoal
 {
     /**
      * The x and z search radius.
      */
-    private static final int SEARCH_RADIUS_X = 8;
+    private static final int SEARCH_RADIUS_X = 10;
 
     /**
-     * The y search radius.
+     * The y search radius (caves / vertical veins).
      */
-    private static final int SEARCH_RADIUS_Y = 8;
+    private static final int SEARCH_RADIUS_Y = 10;
 
     /**
      * The max number of blocks that can be part of a vein.
      */
-    private static final int MAX_VEIN_SIZE = 40;
+    private static final int MAX_VEIN_SIZE = 64;
 
     /**
      * The list of block positions in the current vein.
@@ -58,6 +59,12 @@ public class BlocklingMineGoal extends BlocklingGatherGoal
     private final Set<BlockPos> pathTargetPositionsTested = new HashSet<>();
 
     /**
+     * Last ore mined — next pick prefers face-adjacent vein members.
+     */
+    @Nullable
+    private BlockPos lastMinedPos;
+
+    /**
      * @param id the id associated with the owning task of this goal.
      * @param blockling the blockling the goal is assigned to.
      * @param tasks the associated tasks.
@@ -68,10 +75,37 @@ public class BlocklingMineGoal extends BlocklingGatherGoal
 
         oreWhitelist = new GoalWhitelist("24d7135e-607b-413b-a2a7-00d19119b9de", "ores", Whitelist.Type.BLOCK, this);
         oreWhitelist.setIsUnlocked(blockling.getSkills().getSkill(MiningSkills.WHITELIST).isBought(), false);
-        BlockUtil.ORES.get().forEach(ore -> oreWhitelist.put(RegistryUtil.blockId(ore), true));
+        ensureOreWhitelistEntries(false);
         whitelists.add(oreWhitelist);
 
         setFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.MOVE));
+    }
+
+    /**
+     * Fills missing ore entries (enabled by default). Fixes empty Ores tab when {@code #minecraft:ores} was used.
+     */
+    public void ensureOreWhitelistEntries(boolean sync)
+    {
+        boolean added = false;
+        for (Block ore : BlockUtil.ORES.get())
+        {
+            ResourceLocation id = RegistryUtil.blockId(ore);
+            if (!oreWhitelist.containsKey(id))
+            {
+                oreWhitelist.put(id, true);
+                added = true;
+            }
+        }
+
+        if (sync && added)
+        {
+            int whitelistIndex = whitelists.indexOf(oreWhitelist);
+            if (whitelistIndex >= 0)
+            {
+                new com.willr27.blocklings.network.messages.WhitelistAllMessage(
+                        blockling, id, whitelistIndex, oreWhitelist).sync();
+            }
+        }
     }
 
     @Override
@@ -92,6 +126,8 @@ public class BlocklingMineGoal extends BlocklingGatherGoal
         super.stop();
 
         veinBlockPositions.clear();
+        lastMinedPos = null;
+        pathTargetPositionsTested.clear();
     }
 
     @Override
@@ -147,16 +183,26 @@ public class BlocklingMineGoal extends BlocklingGatherGoal
                         offStack.shrink(1);
                     }
 
-                    blockling.incOresMinedRecently();
+                    boolean minedOre = BlockUtil.isOre(targetBlockState.getBlock());
+
+                    com.willr27.blocklings.command.BlocklingTaskLogger.event(
+                            blockling, "MINE", targetBlockState.getBlock() + " at " + targetPos.toShortString());
 
                     world.destroyBlock(targetPos, false);
                     world.destroyBlockProgress(blockling.getId(), targetPos, -1);
 
-                    if (blockling.getSkills().getSkill(MiningSkills.HAMMER).isBought())
+                    if (minedOre)
+                    {
+                        blockling.incOresMinedRecently();
+                        lastMinedPos = targetPos.immutable();
+                        veinBlockPositions.remove(targetPos);
+                    }
+
+                    if (minedOre && blockling.getSkills().getSkill(MiningSkills.HAMMER).isBought())
                     {
                         for (BlockPos surroundingPos : BlockUtil.getSurroundingBlockPositions(targetPos))
                         {
-                            if (isValidTarget(surroundingPos))
+                            if (isValidOreTarget(surroundingPos))
                             {
                                 for (ItemStack stack : DropUtil.getDrops(DropUtil.Context.MINING, blockling, surroundingPos, mainCanHarvest ? mainStack : ItemStack.EMPTY, offCanHarvest ? offStack : ItemStack.EMPTY))
                                 {
@@ -165,9 +211,17 @@ public class BlocklingMineGoal extends BlocklingGatherGoal
                                 }
 
                                 world.destroyBlock(surroundingPos, false);
+                                veinBlockPositions.remove(surroundingPos);
                             }
                         }
                     }
+
+                    // Pull in newly exposed neighbours, then keep mining the same vein (or tunnel to it).
+                    if (minedOre && lastMinedPos != null)
+                    {
+                        expandVeinAround(lastMinedPos);
+                    }
+                    pickNextOreAfterMine();
                 }
                 else
                 {
@@ -182,14 +236,59 @@ public class BlocklingMineGoal extends BlocklingGatherGoal
         }
     }
 
+    /**
+     * After a successful break: target the next ore in this vein (prefer adjacent / exposed / nearest).
+     */
+    private void pickNextOreAfterMine()
+    {
+        pruneInvalidVeinOres();
+
+        BlockPos next = findNextMineTarget();
+        if (next == null)
+        {
+            setTarget(null);
+            setPathTargetPos(null, null);
+            return;
+        }
+
+        setTarget(next);
+
+        if (isWithinMineRange(next))
+        {
+            setPathTargetPos(next, null);
+        }
+        else
+        {
+            Pair<BlockPos, Path> path = findPathToVein();
+            if (path != null)
+            {
+                setPathTargetPos(path.getFirst(), path.getSecond());
+            }
+            else
+            {
+                setPathTargetPos(next, null);
+            }
+        }
+    }
+
     @Override
     public void checkForAndHandleInvalidTargets()
     {
+        pruneInvalidVeinOres();
+    }
+
+    private void pruneInvalidVeinOres()
+    {
         for (BlockPos blockPos : new ArrayList<>(veinBlockPositions))
         {
-            if (!isValidTarget(blockPos))
+            if (!isValidOreTarget(blockPos))
             {
-                markBad(blockPos);
+                veinBlockPositions.remove(blockPos);
+                // Still an ore block but disabled / unharvestable — skip for a while.
+                if (!world.getBlockState(blockPos).isAir() && BlockUtil.isOre(world.getBlockState(blockPos).getBlock()))
+                {
+                    badTargets.add(blockPos);
+                }
             }
         }
     }
@@ -202,34 +301,313 @@ public class BlocklingMineGoal extends BlocklingGatherGoal
             return true;
         }
 
+        pruneInvalidVeinOres();
+
         if (veinBlockPositions.isEmpty())
         {
+            badTargets.clear();
+            lastMinedPos = null;
+            setPathTargetPos(null, null);
+
             if (!tryFindVein())
             {
                 return false;
             }
-
-            Pair<BlockPos, Path> pathToVein = findPathToVein();
-
-            if (pathToVein == null)
+        }
+        else
+        {
+            absorbNearbyOres();
+            pruneInvalidVeinOres();
+            if (veinBlockPositions.isEmpty())
             {
+                setPathTargetPos(null, null);
                 return false;
             }
-
-            setPathTargetPos(pathToVein.getFirst(), pathToVein.getSecond());
         }
 
-        setTarget((BlockPos) veinBlockPositions.toArray()[veinBlockPositions.size() - 1]);
+        BlockPos next = findNextMineTarget();
+        if (next == null)
+        {
+            veinBlockPositions.clear();
+            setTarget(null);
+            setPathTargetPos(null, null);
+            return false;
+        }
+
+        setTarget(next);
+
+        // Path to the same block we intend to mine — never walk toward a different ore while "mining" stone.
+        if (isWithinMineRange(next))
+        {
+            setPathTargetPos(next, null);
+        }
+        else
+        {
+            Path path = EntityUtil.createPathTo(blockling, next, getRangeSq());
+            if (path != null)
+            {
+                setPathTargetPos(next, path);
+            }
+            else
+            {
+                Pair<BlockPos, Path> pathToVein = findPathToVein();
+                if (pathToVein == null)
+                {
+                    markBad(next);
+                    setTarget(null);
+                    setPathTargetPos(null, null);
+                    return false;
+                }
+                setTarget(pathToVein.getFirst());
+                setPathTargetPos(pathToVein.getFirst(), pathToVein.getSecond());
+            }
+        }
 
         return true;
+    }
+
+    /**
+     * Next block: ore in reach first; else stone blocking that ore; else path to ore.
+     */
+    @Nullable
+    private BlockPos findNextMineTarget()
+    {
+        BlockPos oreInRange = findClosestOreInRange();
+        if (oreInRange != null)
+        {
+            return oreInRange;
+        }
+
+        BlockPos bestOre = findBestOreInVein();
+        if (bestOre == null)
+        {
+            return null;
+        }
+
+        // Pierre devant / collée au minerai et à portée → la casser, puis le minerai.
+        BlockPos blockingStone = findBlockingStoneFor(bestOre);
+        if (blockingStone != null)
+        {
+            return blockingStone;
+        }
+
+        return bestOre;
+    }
+
+    /**
+     * Soft stone that blocks access to {@code ore}: face-adjacent to the ore, or one step
+     * from the blockling toward the ore. Never random cave digging.
+     */
+    @Nullable
+    private BlockPos findBlockingStoneFor(@Nonnull BlockPos ore)
+    {
+        BlockPos best = null;
+        double bestDist = Double.MAX_VALUE;
+
+        // 1) Stone stuck to the ore that we can already hit.
+        for (BlockPos adj : BlockUtil.getAdjacentBlockPositions(ore))
+        {
+            if (!isValidTunnelTarget(adj) || !isWithinMineRange(adj))
+            {
+                continue;
+            }
+            double dist = blockling.distanceToSqr(adj.getX() + 0.5, adj.getY() + 0.5, adj.getZ() + 0.5);
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                best = adj;
+            }
+        }
+        if (best != null)
+        {
+            return best;
+        }
+
+        // 2) One step toward the ore from the blockling (stone "in front").
+        BlockPos feet = blockling.blockPosition();
+        int sx = Integer.signum(ore.getX() - feet.getX());
+        int sy = Integer.signum(ore.getY() - feet.getY());
+        int sz = Integer.signum(ore.getZ() - feet.getZ());
+
+        BlockPos[] toward = new BlockPos[]
+        {
+            feet.offset(sx, 0, sz),
+            feet.offset(sx, 1, sz),
+            feet.offset(sx, sy, sz),
+            feet.above().offset(sx, 0, sz),
+            feet.offset(0, sy != 0 ? sy : 1, 0)
+        };
+
+        double oreDist = blockling.distanceToSqr(ore.getX() + 0.5, ore.getY() + 0.5, ore.getZ() + 0.5);
+        for (BlockPos pos : toward)
+        {
+            if (!isValidTunnelTarget(pos) || !isWithinMineRange(pos))
+            {
+                continue;
+            }
+            double posToOre = (pos.getX() + 0.5 - ore.getX() - 0.5) * (pos.getX() + 0.5 - ore.getX() - 0.5)
+                    + (pos.getY() + 0.5 - ore.getY() - 0.5) * (pos.getY() + 0.5 - ore.getY() - 0.5)
+                    + (pos.getZ() + 0.5 - ore.getZ() - 0.5) * (pos.getZ() + 0.5 - ore.getZ() - 0.5);
+            if (posToOre < oreDist)
+            {
+                return pos;
+            }
+        }
+
+        return null;
+    }
+
+    /** Closest harvestable ore in the current vein that is within mining range. */
+    @Nullable
+    private BlockPos findClosestOreInRange()
+    {
+        BlockPos closest = null;
+        double bestDist = Double.MAX_VALUE;
+
+        for (BlockPos ore : new ArrayList<>(veinBlockPositions))
+        {
+            if (!isValidOreTarget(ore))
+            {
+                veinBlockPositions.remove(ore);
+                continue;
+            }
+            if (!isWithinMineRange(ore))
+            {
+                continue;
+            }
+
+            double dist = blockling.distanceToSqr(ore.getX() + 0.5, ore.getY() + 0.5, ore.getZ() + 0.5);
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                closest = ore;
+            }
+        }
+
+        return closest;
+    }
+
+    @Nullable
+    private BlockPos findBestOreInVein()
+    {
+        BlockPos best = null;
+        int bestScore = Integer.MIN_VALUE;
+        double bestDist = Double.MAX_VALUE;
+
+        for (BlockPos ore : new ArrayList<>(veinBlockPositions))
+        {
+            if (!isValidOreTarget(ore))
+            {
+                veinBlockPositions.remove(ore);
+                continue;
+            }
+
+            int score = 0;
+            if (lastMinedPos != null && isFaceAdjacent(lastMinedPos, ore))
+            {
+                score += 100;
+            }
+            if (isWithinMineRange(ore))
+            {
+                score += 200;
+            }
+            if (!BlockUtil.areAllAdjacentBlocksSolid(world, ore))
+            {
+                score += 50;
+            }
+
+            double dist = blockling.distanceToSqr(ore.getX() + 0.5, ore.getY() + 0.5, ore.getZ() + 0.5);
+            if (score > bestScore || (score == bestScore && dist < bestDist))
+            {
+                best = ore;
+                bestScore = score;
+                bestDist = dist;
+            }
+        }
+
+        return best;
+    }
+
+    private static boolean isFaceAdjacent(@Nonnull BlockPos a, @Nonnull BlockPos b)
+    {
+        int dx = Math.abs(a.getX() - b.getX());
+        int dy = Math.abs(a.getY() - b.getY());
+        int dz = Math.abs(a.getZ() - b.getZ());
+        return dx + dy + dz == 1;
+    }
+
+    /** True if the blockling can mine this block from the current position (slight grace for wall ores). */
+    private boolean isWithinMineRange(@Nonnull BlockPos ore)
+    {
+        float range = blockling.getStats().miningRange.getValue() + 0.75f;
+        return blockling.distanceToSqr(ore.getX() + 0.5, ore.getY() + 0.5, ore.getZ() + 0.5) <= (double) (range * range);
+    }
+
+    /** Whitelisted harvestable ore. Respects the Ores whitelist when the skill is bought. */
+    private boolean isValidOreTarget(@Nullable BlockPos pos)
+    {
+        if (!isValidTargetPos(pos) || pos == null)
+        {
+            return false;
+        }
+        Block block = world.getBlockState(pos).getBlock();
+        return BlockUtil.isOre(block) && isOreAllowedByWhitelist(block) && canHarvestPos(pos);
+    }
+
+    /** Soft stone used only to clear a path to a known ore. */
+    private boolean isValidTunnelTarget(@Nullable BlockPos pos)
+    {
+        if (!isValidTargetPos(pos) || pos == null)
+        {
+            return false;
+        }
+        return BlockUtil.isTunnelStone(world.getBlockState(pos).getBlock()) && canHarvestPos(pos);
+    }
+
+    /**
+     * When the whitelist skill is bought, only enabled entries are mined.
+     * Uses the skill flag (not only {@code isUnlocked}) to avoid client/server desync.
+     */
+    private boolean isOreAllowedByWhitelist(@Nonnull Block block)
+    {
+        boolean skillBought = blockling.getSkills().getSkill(MiningSkills.WHITELIST).isBought();
+        if (skillBought && !oreWhitelist.isUnlocked())
+        {
+            oreWhitelist.setIsUnlocked(true, false);
+        }
+
+        if (!skillBought)
+        {
+            return true;
+        }
+
+        ResourceLocation id = RegistryUtil.blockId(block);
+        Boolean enabled = oreWhitelist.get(id);
+        if (enabled != null)
+        {
+            return enabled;
+        }
+
+        return oreWhitelist.isEmpty();
+    }
+
+    @Override
+    public boolean isInRangeOfPathTargetPos()
+    {
+        BlockPos target = getTarget();
+        if (target == null)
+        {
+            return hasPathTargetPos() && super.isInRangeOfPathTargetPos();
+        }
+        return isWithinMineRange(target);
     }
 
     @Override
     public void markEntireTargetBad()
     {
-        while (!veinBlockPositions.isEmpty())
+        if (hasTarget())
         {
-            markBad(veinBlockPositions.get(0));
+            markBad(getTarget());
         }
     }
 
@@ -244,7 +622,12 @@ public class BlocklingMineGoal extends BlocklingGatherGoal
     @Override
     protected boolean isValidTargetBlock(@Nonnull Block block)
     {
-        return oreWhitelist.isEntryWhitelisted(block);
+        if (BlockUtil.isOre(block))
+        {
+            return isOreAllowedByWhitelist(block);
+        }
+        // Stone only while we have a known vein to dig toward (not free cave mining).
+        return BlockUtil.isTunnelStone(block) && !veinBlockPositions.isEmpty();
     }
 
     @Nonnull
@@ -261,12 +644,15 @@ public class BlocklingMineGoal extends BlocklingGatherGoal
      */
     private boolean tryFindVein()
     {
+        // Existing blocklings may still have an empty ores map from the old #minecraft:ores tag.
+        ensureOreWhitelistEntries(false);
+
         BlockPos blocklingBlockPos = blockling.blockPosition();
 
-        List<BlockPos> veinBlockPositions = new ArrayList<>();
-        List<BlockPos> testedBlockPositions = new ArrayList<>();
+        List<BlockPos> bestVein = new ArrayList<>();
+        Set<BlockPos> testedBlockPositions = new HashSet<>();
 
-        double closestVeinDistSq = Float.MAX_VALUE;
+        double closestVeinDistSq = Double.MAX_VALUE;
 
         for (int i = -SEARCH_RADIUS_X; i <= SEARCH_RADIUS_X; i++)
         {
@@ -281,22 +667,41 @@ public class BlocklingMineGoal extends BlocklingGatherGoal
                         continue;
                     }
 
-                    if (isValidTarget(testBlockPos))
+                    if (isValidOreTarget(testBlockPos))
                     {
-                        List<BlockPos> veinBlockPositionsToTest = findVeinFrom(testBlockPos);
+                        List<BlockPos> veinToTest = findVeinFrom(testBlockPos);
 
                         boolean canSeeVein = false;
+                        double closestInVein = Double.MAX_VALUE;
 
-                        for (BlockPos veinBlockPos : veinBlockPositionsToTest)
+                        for (BlockPos veinBlockPos : veinToTest)
                         {
-                            if (!testedBlockPositions.contains(veinBlockPos))
-                            {
-                                testedBlockPositions.add(veinBlockPos);
-                            }
+                            testedBlockPositions.add(veinBlockPos);
 
                             if (!canSeeVein && EntityUtil.canSee(blockling, veinBlockPos))
                             {
                                 canSeeVein = true;
+                            }
+
+                            double dist = blockling.distanceToSqr(veinBlockPos.getX() + 0.5, veinBlockPos.getY() + 0.5, veinBlockPos.getZ() + 0.5);
+                            if (dist < closestInVein)
+                            {
+                                closestInVein = dist;
+                            }
+                        }
+
+                        if (!canSeeVein)
+                        {
+                            // Cave walls often block raycasts; accept if within search radius horizontally.
+                            for (BlockPos veinBlockPos : veinToTest)
+                            {
+                                double dx = blockling.getX() - (veinBlockPos.getX() + 0.5);
+                                double dz = blockling.getZ() - (veinBlockPos.getZ() + 0.5);
+                                if ((dx * dx + dz * dz) <= (double) (SEARCH_RADIUS_X * SEARCH_RADIUS_X))
+                                {
+                                    canSeeVein = true;
+                                    break;
+                                }
                             }
                         }
 
@@ -305,28 +710,32 @@ public class BlocklingMineGoal extends BlocklingGatherGoal
                             continue;
                         }
 
-                        for (BlockPos veinBlockPos : veinBlockPositionsToTest)
+                        boolean hasInRange = false;
+                        for (BlockPos veinBlockPos : veinToTest)
                         {
-                            float distanceSq = (float) blockling.distanceToSqr(veinBlockPos.getX() + 0.5f, veinBlockPos.getY() + 0.5f, veinBlockPos.getZ() + 0.5f);
-
-                            if (distanceSq < closestVeinDistSq)
+                            if (isWithinMineRange(veinBlockPos))
                             {
-                                closestVeinDistSq = distanceSq;
-                                veinBlockPositions = veinBlockPositionsToTest;
-
+                                hasInRange = true;
                                 break;
                             }
+                        }
+
+                        // Prefer veins already in reach over distant ones.
+                        double score = hasInRange ? closestInVein - 1000.0 : closestInVein;
+                        if (score < closestVeinDistSq)
+                        {
+                            closestVeinDistSq = score;
+                            bestVein = veinToTest;
                         }
                     }
                 }
             }
         }
 
-        if (!veinBlockPositions.isEmpty())
+        if (!bestVein.isEmpty())
         {
             this.veinBlockPositions.clear();
-            this.veinBlockPositions.addAll(veinBlockPositions);
-
+            this.veinBlockPositions.addAll(bestVein);
             return true;
         }
 
@@ -334,62 +743,154 @@ public class BlocklingMineGoal extends BlocklingGatherGoal
     }
 
     /**
-     * Returns a vein from the given starting block pos.
-     *
-     * @param startingBlockPos the starting block pos.
-     * @return the list of block positions in the vein.
+     * BFS vein from starting ore. Connectivity uses whitelist only (not harvest / badTargets)
+     * so the full patch is collected even if one block was temporarily skipped.
      */
     @Nonnull
     private List<BlockPos> findVeinFrom(@Nonnull BlockPos startingBlockPos)
     {
-        List<BlockPos> veinBlockPositionsToTest = new ArrayList<>();
-        List<BlockPos> veinBlockPositions = new ArrayList<>();
+        List<BlockPos> vein = new ArrayList<>();
+        ArrayDeque<BlockPos> queue = new ArrayDeque<>();
 
-        veinBlockPositionsToTest.add(startingBlockPos);
-        veinBlockPositions.add(startingBlockPos);
+        queue.add(startingBlockPos);
+        vein.add(startingBlockPos);
 
-        while (!veinBlockPositionsToTest.isEmpty() && veinBlockPositions.size() < MAX_VEIN_SIZE)
+        while (!queue.isEmpty() && vein.size() < MAX_VEIN_SIZE)
         {
-            BlockPos testBlockPos = veinBlockPositionsToTest.stream().findFirst().get();
+            BlockPos testBlockPos = queue.removeFirst();
 
-            BlockPos[] surroundingBlockPositions = new BlockPos[]
-                    {
-                            testBlockPos.offset(-1, 0, 0),
-                            testBlockPos.offset(1, 0, 0),
-                            testBlockPos.offset(0, -1, 0),
-                            testBlockPos.offset(0, 1, 0),
-                            testBlockPos.offset(0, 0, -1),
-                            testBlockPos.offset(0, 0, 1),
-                    };
-
-            for (BlockPos surroundingPos : surroundingBlockPositions)
+            for (BlockPos surroundingPos : BlockUtil.getAdjacentBlockPositions(testBlockPos))
             {
-                if (isValidTarget(surroundingPos))
+                if (vein.size() >= MAX_VEIN_SIZE)
                 {
-                    if (!veinBlockPositions.contains(surroundingPos))
-                    {
-                        veinBlockPositions.add(surroundingPos);
-                        veinBlockPositionsToTest.add(surroundingPos);
-                    }
+                    break;
                 }
-            }
 
-            veinBlockPositionsToTest.remove(testBlockPos);
+                if (!isVeinOre(surroundingPos) || vein.contains(surroundingPos))
+                {
+                    continue;
+                }
+
+                vein.add(surroundingPos);
+                queue.add(surroundingPos);
+            }
         }
 
-        return veinBlockPositions;
+        return vein;
+    }
+
+    /** Ore for BFS — whitelist only, never tunnel-stone side effects. */
+    private boolean isVeinOre(@Nonnull BlockPos pos)
+    {
+        Block block = world.getBlockState(pos).getBlock();
+        return BlockUtil.isOre(block) && isOreAllowedByWhitelist(block);
     }
 
     /**
-     * Finds the first valid path to the vein, not necessarily the most optimal.
-     *
-     * @return the path target position and the path to the vein, or null if no path could be found.
+     * Pull any ores near the blockling into the active vein so wall iron isn't ignored
+     * while stuck on a distant / wrong cluster.
+     */
+    private void absorbNearbyOres()
+    {
+        ensureOreWhitelistEntries(false);
+
+        BlockPos origin = blockling.blockPosition();
+        for (int i = -SEARCH_RADIUS_X; i <= SEARCH_RADIUS_X; i++)
+        {
+            for (int j = -SEARCH_RADIUS_Y; j <= SEARCH_RADIUS_Y; j++)
+            {
+                for (int k = -SEARCH_RADIUS_X; k <= SEARCH_RADIUS_X; k++)
+                {
+                    if (veinBlockPositions.size() >= MAX_VEIN_SIZE)
+                    {
+                        return;
+                    }
+
+                    BlockPos pos = origin.offset(i, j, k);
+                    if (!isVeinOre(pos) || veinBlockPositions.contains(pos))
+                    {
+                        continue;
+                    }
+
+                    // Prefer absorbing ores we can already reach / see nearby.
+                    if (!isWithinMineRange(pos) && blockling.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > 36.0)
+                    {
+                        continue;
+                    }
+
+                    for (BlockPos extra : findVeinFrom(pos))
+                    {
+                        if (veinBlockPositions.size() >= MAX_VEIN_SIZE)
+                        {
+                            return;
+                        }
+                        if (!veinBlockPositions.contains(extra))
+                        {
+                            veinBlockPositions.add(extra);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * After mining, attach newly exposed adjacent ores of the same vein type.
+     */
+    private void expandVeinAround(@Nonnull BlockPos minedPos)
+    {
+        for (BlockPos adjacent : BlockUtil.getAdjacentBlockPositions(minedPos))
+        {
+            if (veinBlockPositions.size() >= MAX_VEIN_SIZE)
+            {
+                break;
+            }
+
+            if (isVeinOre(adjacent) && !veinBlockPositions.contains(adjacent))
+            {
+                // Also pull the rest of any newly connected cluster.
+                for (BlockPos extra : findVeinFrom(adjacent))
+                {
+                    if (veinBlockPositions.size() >= MAX_VEIN_SIZE)
+                    {
+                        break;
+                    }
+                    if (!veinBlockPositions.contains(extra))
+                    {
+                        veinBlockPositions.add(extra);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Path to the best ore in the vein: exposed first, then nearest.
      */
     @Nullable
     public Pair<BlockPos, Path> findPathToVein()
     {
-        for (BlockPos veinBlockPos : veinBlockPositions)
+        List<BlockPos> ordered = new ArrayList<>(veinBlockPositions);
+        ordered.sort((a, b) ->
         {
+            boolean aExposed = !BlockUtil.areAllAdjacentBlocksSolid(world, a);
+            boolean bExposed = !BlockUtil.areAllAdjacentBlocksSolid(world, b);
+            if (aExposed != bExposed)
+            {
+                return aExposed ? -1 : 1;
+            }
+            double da = blockling.distanceToSqr(a.getX() + 0.5, a.getY() + 0.5, a.getZ() + 0.5);
+            double db = blockling.distanceToSqr(b.getX() + 0.5, b.getY() + 0.5, b.getZ() + 0.5);
+            return Double.compare(da, db);
+        });
+
+        for (BlockPos veinBlockPos : ordered)
+        {
+            if (!isValidOreTarget(veinBlockPos))
+            {
+                continue;
+            }
+
             if (BlockUtil.areAllAdjacentBlocksSolid(world, veinBlockPos))
             {
                 continue;
@@ -412,20 +913,37 @@ public class BlocklingMineGoal extends BlocklingGatherGoal
     }
 
     /**
-     * Sets the root vein position to the given block pos.
-     * Will then recalculate the vein.
-     *
-     * @param blockPos the block pos to use as the vein root.
+     * Expands the tracked vein from {@code blockPos} without dropping already-known ores.
      */
     public void changeVeinRootTo(@Nonnull BlockPos blockPos)
     {
+        List<BlockPos> previous = new ArrayList<>(veinBlockPositions);
+        List<BlockPos> rebuilt = findVeinFrom(blockPos);
+
+        for (BlockPos old : previous)
+        {
+            if (isVeinOre(old) && !rebuilt.contains(old))
+            {
+                rebuilt.add(old);
+            }
+        }
+
         veinBlockPositions.clear();
-        veinBlockPositions.addAll(findVeinFrom(blockPos));
+        veinBlockPositions.addAll(rebuilt);
     }
 
     @Override
     protected boolean recalcPath(boolean force)
     {
+        if (hasTarget() && isWithinMineRange(getTarget()))
+        {
+            if (!hasPathTargetPos())
+            {
+                setPathTargetPos(getTarget(), null);
+            }
+            return true;
+        }
+
         if (force)
         {
             Pair<BlockPos, Path> result = findPathToVein();
@@ -433,18 +951,13 @@ public class BlocklingMineGoal extends BlocklingGatherGoal
             if (result != null)
             {
                 setPathTargetPos(result.getFirst(), result.getSecond());
-            }
-            else
-            {
-                setPathTargetPos(null, null);
-
-                return false;
+                return true;
             }
 
-            return true;
+            setPathTargetPos(null, null);
+            return false;
         }
 
-        // Try to improve our path each recalc by testing different blocks in the vein
         for (BlockPos veinBlockPos : veinBlockPositions)
         {
             if (pathTargetPositionsTested.contains(veinBlockPos))
@@ -453,6 +966,11 @@ public class BlocklingMineGoal extends BlocklingGatherGoal
             }
 
             pathTargetPositionsTested.add(veinBlockPos);
+
+            if (!isValidOreTarget(veinBlockPos))
+            {
+                continue;
+            }
 
             if (BlockUtil.areAllAdjacentBlocksSolid(world, veinBlockPos))
             {
@@ -463,25 +981,26 @@ public class BlocklingMineGoal extends BlocklingGatherGoal
 
             if (path != null)
             {
-                if (path.getDistToTarget() < this.path.getDistToTarget())
+                if (this.path == null || path.getDistToTarget() < this.path.getDistToTarget())
                 {
                     setPathTargetPos(veinBlockPos, path);
-
                     return true;
                 }
             }
-
-            return hasPath();
         }
 
         pathTargetPositionsTested.clear();
 
-        return false;
+        return hasPath() || (hasTarget() && isWithinMineRange(getTarget()));
     }
 
     @Override
     protected boolean isValidPathTargetPos(@Nonnull BlockPos blockPos)
     {
+        if (hasTarget() && isWithinMineRange(getTarget()))
+        {
+            return true;
+        }
         return veinBlockPositions.contains(blockPos);
     }
 
@@ -490,9 +1009,22 @@ public class BlocklingMineGoal extends BlocklingGatherGoal
     {
         super.setPathTargetPos(blockPos, pathToPos);
 
-        if (hasPathTargetPos())
+        // Do not rebuild/shrink the vein on every path change — that dropped adjacent ores.
+        // Only expand from the path target if it is still ore.
+        if (hasPathTargetPos() && isVeinOre(getPathTargetPos()))
         {
-            changeVeinRootTo(getPathTargetPos());
+            List<BlockPos> extra = findVeinFrom(getPathTargetPos());
+            for (BlockPos pos : extra)
+            {
+                if (veinBlockPositions.size() >= MAX_VEIN_SIZE)
+                {
+                    break;
+                }
+                if (!veinBlockPositions.contains(pos))
+                {
+                    veinBlockPositions.add(pos);
+                }
+            }
         }
     }
 
@@ -500,5 +1032,14 @@ public class BlocklingMineGoal extends BlocklingGatherGoal
     public float getRangeSq()
     {
         return blockling.getStats().miningRangeSq.getValue();
+    }
+
+    @Nonnull
+    @Override
+    public String getDebugStatus()
+    {
+        BlockPos target = getTarget();
+        String inRange = target != null ? String.valueOf(isWithinMineRange(target)) : "n/a";
+        return super.getDebugStatus() + " vein=" + veinBlockPositions.size() + " inRange=" + inRange;
     }
 }

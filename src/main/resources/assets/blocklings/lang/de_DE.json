@@ -1,13 +1,16 @@
 {
   "entity.blocklings.blockling": "Blockling",
+
   "item.blocklings.blockling": "Blockling",
   "item.blocklings.blockling_spawn_egg": "Blockling-Spawn-Ei",
   "item.blocklings.blockling_whistle": "Blockling Whistle",
   "item.blocklings.blockling_whistle.location": "Location: ",
+
   "blocklings.gui.more_info": "Halte %s für mehr Informationen",
   "blocklings.gui.current_level": "Level: %1$s%2$d",
   "blocklings.gui.xp_required": "XP: %1$s%2$d/%3$d",
   "blocklings.gui.configure_task": "Aufgabe konfigurieren",
+
   "blocklings.type.natural.name": "Natural type: ",
   "blocklings.type.natural.desc": "The natural type of your blockling does not effect stat bonuses but still provides a passive effect. This is the type they spawned as and cannot be changed.",
   "blocklings.type.name": "Primary type: ",
@@ -32,6 +35,8 @@
   "blocklings.type.dark_oak_log.passive": "Dark Oak blocklings heal their allies for 2 health every 10 seconds if they are near a dark oak tree.",
   "blocklings.type.acacia_log": "Acacia Log",
   "blocklings.type.acacia_log.passive": "Acacia blocklings heal their allies for 2 health every 10 seconds if they are near an acacia tree.",
+  "blocklings.type.stone": "Stein",
+  "blocklings.type.stone.passive": "Stone blocklings provide their allies bonus resistance when nearby.",
   "blocklings.type.iron": "Eisen",
   "blocklings.type.iron.passive": "Iron blocklings provide their allies bonus strength when nearby.",
   "blocklings.type.quartz": "Quarz",
@@ -50,6 +55,7 @@
   "blocklings.type.obsidian.passive": "Obsidian blocklings knockback their attackers when attacked. They also have fire immunity.",
   "blocklings.type.glowstone": "Glowstone",
   "blocklings.type.glowstone.passive": "Glowstone blocklings emit light like their block counterpart.",
+
   "blocklings.tab.stats": "Werte",
   "blocklings.tab.tasks": "Aufgaben",
   "blocklings.tab.equipment": "Ausrüstung",
@@ -60,6 +66,7 @@
   "blocklings.tab.mining": "Bergbau",
   "blocklings.tab.woodcutting": "Holzfällen",
   "blocklings.tab.farming": "Ackerbau",
+
   "blocklings.task.ui.configure": "Configure",
   "blocklings.task.ui.disable": "Disable",
   "blocklings.task.ui.enable": "Enable",
@@ -97,19 +104,23 @@
   "blocklings.task.farm_crops.desc": "Dein Blockling erntet Pflanzen in der Nähe ab wenn er eine Hacke trägt.",
   "blocklings.task.find_blocklings.name": "Find Blocklings",
   "blocklings.task.find_blocklings.desc": "Your blockling will lead you to nearby blocklings with the same natural type as your blockling's primary type.",
+
   "blocklings.whitelist.targets": "Ziele",
   "blocklings.whitelist.ores": "Erze",
   "blocklings.whitelist.logs": "Holz",
   "blocklings.whitelist.crops": "Pflanzen",
   "blocklings.whitelist.seeds": "Saat",
+
   "blocklings.skill_group.general.gui_title": "Allgemeine Fähigkeiten",
   "blocklings.skill_group.combat.gui_title": "Kampffähigkeiten",
   "blocklings.skill_group.mining.gui_title": "Bergbaufähigkeiten",
   "blocklings.skill_group.woodcutting.gui_title": "Holzfällerfähigkeiten",
   "blocklings.skill_group.farming.gui_title": "Landwirtschaftsfähigkeiten",
+
   "blocklings.skill.buy_confirmation": "Bist du sicher dass du %s freischalten willst?",
   "blocklings.skill.unknown": "???",
   "blocklings.skill.name": "Fähigkeit",
+
   "blocklings.skill.general.heal.name": "Heilung",
   "blocklings.skill.general.heal.desc": "Rechtsklicke auf deinen Blockling mit einer Blume oder seinem zugehörigen Item in der Hand, um ihn um 3-5 Lebenspunkte zu heilen.",
   "blocklings.skill.general.packling.name": "Huckepack",
@@ -126,6 +137,7 @@
   "blocklings.skill.general.autoswitch.desc": "Dein Blockling wechselt zum besten Werkzeug, das er für seine Aufgabe hat.",
   "blocklings.skill.general.find_blocklings.name": "Friend Finder",
   "blocklings.skill.general.find_blocklings.desc": "Unlocks the \"Find Blocklings\" task.",
+
   "blocklings.skill.combat.novice_guard.name": "Anfängerwache",
   "blocklings.skill.combat.novice_guard.desc": "Schaltet die \"Greife den Angreifer des Besitzers an\" und \"Greife das Angriffsziel des Besitzers an.\" Aufgabe frei",
   "blocklings.skill.combat.whitelist.name": "Erlaubte Angriffsziele",
@@ -156,6 +168,7 @@
   "blocklings.skill.combat.poison_attacks.desc": "Dein Blockling vergiftet seine Ziele.",
   "blocklings.skill.combat.wither_attacks.name": "Wither Attacke",
   "blocklings.skill.combat.wither_attacks.desc": "Dein Blockling setzt seinen Zielen den Wither Effekt zu.",
+
   "blocklings.skill.mining.novice_miner.name": "Bergbauanfänger",
   "blocklings.skill.mining.novice_miner.desc": "Schaltet die \"Baue Erze ab\" Aufgabe frei.",
   "blocklings.skill.mining.whitelist.name": "Erlaubte Erze",
@@ -174,6 +187,7 @@
   "blocklings.skill.mining.hot_hands.desc": "Die Hände deines Blocklings sind so heiß, dass sie die Erze die er abbaut zu schmelzen scheinen.",
   "blocklings.skill.mining.hammer.name": "Hammer",
   "blocklings.skill.mining.hammer.desc": "Dein Blockling baut Erze in einem 3x3x3 Bereich ab.",
+
   "blocklings.skill.woodcutting.novice_lumberjack.name": "Holzfällanfänger",
   "blocklings.skill.woodcutting.novice_lumberjack.desc": "Schaltet die \"Fälle Bäume\" Aufgabe frei.",
   "blocklings.skill.woodcutting.whitelist.name": "Erlaubtes Holz",
@@ -196,6 +210,7 @@
   "blocklings.skill.woodcutting.replanter.desc": "Dein Blockling pflanzt die Bäume wieder die er gefällt hat, wenn er Setzlinge hat.",
   "blocklings.skill.woodcutting.lumber_axe.name": "Holzhacker",
   "blocklings.skill.woodcutting.lumber_axe.desc": "Dein Blockling baut Bäume in einem 3x3x3 Bereich ab.",
+
   "blocklings.skill.farming.novice_farmer.name": "Anfängerlandwirt",
   "blocklings.skill.farming.novice_farmer.desc": "Schaltet die \"Ernte Pflanzen\" Aufgabe frei.",
   "blocklings.skill.farming.crop_whitelist.name": "Erlaubte Pflanzen",
@@ -216,33 +231,42 @@
   "blocklings.skill.farming.night_owl.desc": "Je dunkler es ist, desto schneller erntet dein Blockling Pflanzen.",
   "blocklings.skill.farming.scythe.name": "Sense",
   "blocklings.skill.farming.scythe.desc": "Dein Blockling erntet Pflanzen in einem 3x3x3 Bereich.",
+
   "blocklings.requirements": "Anforderungen:",
   "blocklings.conflicts": "Konflikte:",
+
   "blocklings.stats.attack.name": "§6Angriff",
   "blocklings.stats.defence.name": "§6Verteidigung",
   "blocklings.stats.gathering.name": "§6Sammeln",
   "blocklings.stats.movement.name": "§6Bewegung",
+
   "blocklings.attribute.health.name": "Leben",
   "blocklings.attribute.max_health.name": "Maximale Leben",
+
   "blocklings.attribute.off_hand_attack_damage.name": "Angriffsschaden (Links)",
   "blocklings.attribute.main_hand_attack_damage.name": "Angriffsschaden (Rechts)",
   "blocklings.attribute.attack_speed.name": "Angriffsgeschwindigkeit (Durchschnitt)",
   "blocklings.attribute.attack_speed_tools.name": "Tools",
+
   "blocklings.attribute.armour.name": "Rüstung",
   "blocklings.attribute.armour_toughness.name": "Rüstungshärte",
   "blocklings.attribute.knockback_resistance.name": "Standfestigkeit",
+
   "blocklings.attribute.mining_speed.name": "Abbaugeschwindigkeit",
   "blocklings.attribute.mining_range.name": "Abbaureichweite",
   "blocklings.attribute.woodcutting_speed.name": "Holzfällgeschwindigkeit",
   "blocklings.attribute.woodcutting_range.name": "Holzfällreichweite",
   "blocklings.attribute.farming_speed.name": "Erntgeschwindigkeit",
   "blocklings.attribute.farming_range.name": "Erntreichweite",
+
   "blocklings.attribute.move_speed.name": "Bewegungsgeschwindigkeit",
+
   "blocklings.attribute.combat_level.name": "Kampflevel",
   "blocklings.attribute.mining_level.name": "Bergbaulevel",
   "blocklings.attribute.woodcutting_level.name": "Holzfällerlevel",
   "blocklings.attribute.farming_level.name": "Ackkerbaulevel",
   "blocklings.attribute.total_level.name": "Gesamtlevel",
+
   "blocklings.attribute.combat_level.required": "Kampflevel: %d",
   "blocklings.attribute.mining_level.required": "Bergbaulevel: %d",
   "blocklings.attribute.woodcutting_level.required": "Holzfällerlevel: %d",
@@ -255,6 +279,8 @@
   "blocklings.attribute.mining.range": "Reichweite: %.1f",
   "blocklings.attribute.woodcutting.range": "Reichweite: %.1f",
   "blocklings.attribute.farming.range": "Reichweite: %.1f",
+
   "blocklings.subtitle.blockling_whistle": "Blockling whistle",
+
   "blocklings.argument.level.invalid": "Invalid level \"%s\"!"
 }

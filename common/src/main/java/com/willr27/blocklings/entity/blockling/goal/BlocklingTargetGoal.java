@@ -66,18 +66,23 @@ public abstract class BlocklingTargetGoal<T> extends BlocklingPathGoal
         }
 
         boolean recalculatedTarget = tryRecalcTarget();
-        lastRecalcTime = blockling.getAge();
+        lastRecalcTime = blockling.tickCount;
 
         if (!recalculatedTarget || !recalcPath(false) || isStuck())
         {
             if (!recalculatedTarget)
             {
                 badTargets.clear();
+                markEntireTargetBad();
+                markPathTargetPosBad();
+                setTarget(null);
             }
-
-            markEntireTargetBad();
-            markPathTargetPosBad();
-            setTarget(null);
+            else
+            {
+                // Target found but path not ready — do not blacklist the container.
+                setTarget(null);
+                setPathTargetPos(null, null);
+            }
 
             return false;
         }
@@ -113,7 +118,7 @@ public abstract class BlocklingTargetGoal<T> extends BlocklingPathGoal
         if (isRecalcIntervalExceeded() || !isTargetValid())
         {
             recalculatedTarget = true;
-            lastRecalcTime = blockling.getAge();
+            lastRecalcTime = blockling.tickCount;
 
             if (!tryRecalcTarget())
             {
@@ -195,6 +200,33 @@ public abstract class BlocklingTargetGoal<T> extends BlocklingPathGoal
     public boolean isTargetValid()
     {
         return isValidTarget(getTarget());
+    }
+
+    @Nonnull
+    @Override
+    public String getDebugStatus()
+    {
+        Object target = getTarget();
+        String targetStr;
+        if (target == null)
+        {
+            targetStr = "none";
+        }
+        else if (target instanceof net.minecraft.world.entity.Entity entity)
+        {
+            targetStr = entity.getName().getString();
+        }
+        else if (target instanceof net.minecraft.core.BlockPos pos)
+        {
+            targetStr = pos.toShortString();
+        }
+        else
+        {
+            targetStr = target.toString();
+        }
+
+        String path = hasPathTargetPos() ? getPathTargetPos().toShortString() : "none";
+        return getState() + " target=" + targetStr + " path=" + path;
     }
 
     /**

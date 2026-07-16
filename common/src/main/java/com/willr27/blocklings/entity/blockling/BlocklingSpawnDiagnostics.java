@@ -58,6 +58,11 @@ public final class BlocklingSpawnDiagnostics {
                 BuiltInRegistries.ENTITY_TYPE.getKey(blocklingType));
     }
 
+    public static void disable() {
+        enabled = false;
+        LOG.info("[SpawnDebug] DISABLED");
+    }
+
     public static boolean isEnabled() {
         return enabled;
     }

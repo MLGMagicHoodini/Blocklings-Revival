@@ -538,6 +538,8 @@ public class SkillsPanel extends CanvasPanel
             setHeight(skill.info.general.type.texture.height);
             setX(skill.info.gui.x - getWidth() / 2.0);
             setY(skill.info.gui.y - getHeight() / 2.0);
+            // Keep canvas panning from starting while clicking a skill.
+            setShouldPropagateDrag(false);
 
             info = new StackPanel()
             {
@@ -575,18 +577,23 @@ public class SkillsPanel extends CanvasPanel
 
                     if (isSelected)
                     {
-                        }
+                        matrixStack.setColor(0.8f, 1.0f, 0.8f, 1.0f);
+                    }
                     else if (skill.hasConflict() && state != Skill.State.LOCKED)
                     {
-                        }
+                        matrixStack.setColor(0.8f, 0.6f, 0.6f, 1.0f);
+                    }
                     else if (state == Skill.State.UNLOCKED && !skill.canBuy())
                     {
-                        }
+                        matrixStack.setColor(0.8f, 0.6f, 0.6f, 1.0f);
+                    }
                     else
                     {
-                        }
+                        matrixStack.setColor(colour.getRed() / 255.0f, colour.getGreen() / 255.0f, colour.getBlue() / 255.0f, 1.0f);
+                    }
 
                     super.onRender(matrixStack, scissorStack, mouseX, mouseY, partialTicks);
+                    matrixStack.setColor(1.0f, 1.0f, 1.0f, 1.0f);
                 }
             };
             type.setParent(this);
@@ -604,18 +611,23 @@ public class SkillsPanel extends CanvasPanel
 
                     if (state == Skill.State.LOCKED)
                     {
-                        }
+                        matrixStack.setColor(0.0f, 0.0f, 0.0f, 1.0f);
+                    }
                     else if (skill.hasConflict())
                     {
-                        }
+                        matrixStack.setColor(0.8f, 0.6f, 0.6f, 1.0f);
+                    }
                     else if (state == Skill.State.UNLOCKED && !skill.canBuy())
                     {
-                        }
+                        matrixStack.setColor(0.8f, 0.6f, 0.6f, 1.0f);
+                    }
                     else
                     {
-                        }
+                        matrixStack.setColor(1.0f, 1.0f, 1.0f, 1.0f);
+                    }
 
                     super.onRender(matrixStack, scissorStack, mouseX, mouseY, partialTicks);
+                    matrixStack.setColor(1.0f, 1.0f, 1.0f, 1.0f);
                 }
             };
             icon.setParent(this);
@@ -641,13 +653,17 @@ public class SkillsPanel extends CanvasPanel
 
                     if (skill.areParentsBought())
                     {
-                        }
+                        Color colour = skill.info.gui.colour;
+                        matrixStack.setColor(colour.getRed() / 255.0f, colour.getGreen() / 255.0f, colour.getBlue() / 255.0f, 1.0f);
+                    }
                     else
                     {
-                        }
+                        matrixStack.setColor(0.5f, 0.5f, 0.5f, 1.0f);
+                    }
 
                     renderTextureAsBackground(matrixStack, Textures.Skills.SKILL_NAME_BACKGROUND.width((int) (getWidth() - 2)), 0, getPadding().top);
                     renderTextureAsBackground(matrixStack, Textures.Skills.SKILL_NAME_BACKGROUND.width(2).dx(Textures.Skills.SKILL_NAME_BACKGROUND.width - 2), getWidth() - 2, getPadding().top);
+                    matrixStack.setColor(1.0f, 1.0f, 1.0f, 1.0f);
                 }
             };
             nameBackground.setParent(info);

@@ -1,9 +1,9 @@
 package com.willr27.blocklings.entity.blockling.goal;
 
 import com.willr27.blocklings.util.BlockUtil;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.block.BlockState;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 
 import javax.annotation.Nonnull;
 import java.util.HashMap;
@@ -24,7 +24,7 @@ public class BlockChunk
      *
      */
     @Nonnull
-    private Level level;
+    private World world;
 
     /**
      * The map of the positions and the block states at the time of construction.
@@ -36,16 +36,16 @@ public class BlockChunk
      * @param centerPos the block pos in the center of the 3x3 area.
      * @param world the world the block is in.
      */
-    public BlockChunk(@Nonnull BlockPos centerPos, @Nonnull Level level)
+    public BlockChunk(@Nonnull BlockPos centerPos, @Nonnull World world)
     {
         this.centerPos = centerPos;
-        this.level = level;
+        this.world = world;
 
-        blocks.put(centerPos, level.getBlockState(centerPos));
+        blocks.put(centerPos, world.getBlockState(centerPos));
 
         for (BlockPos surroundingPos : BlockUtil.getSurroundingBlockPositions(centerPos))
         {
-            blocks.put(surroundingPos, level.getBlockState(surroundingPos));
+            blocks.put(surroundingPos, world.getBlockState(surroundingPos));
         }
     }
 
@@ -58,7 +58,7 @@ public class BlockChunk
     {
         for (Map.Entry<BlockPos, BlockState> entry : blocks.entrySet())
         {
-            if (level.getBlockState(entry.getKey()).getBlock() != entry.getValue().getBlock())
+            if (world.getBlockState(entry.getKey()).getBlock() != entry.getValue().getBlock())
             {
                 return true;
             }

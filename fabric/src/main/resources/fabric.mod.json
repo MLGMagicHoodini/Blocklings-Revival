@@ -7,9 +7,12 @@
   "authors": ["${mod_author}"],
   "contact": {},
   "license": "${license}",
-  "icon": "assets/blocklings/icon.png",
+  "icon": "blocklings.png",
   "environment": "*",
   "accessWidener": "blocklings.accesswidener",
+  "mixins": [
+    "blocklings.mixins.json"
+  ],
   "entrypoints": {
     "main": ["com.willr27.blocklings.BlocklingsFabric"],
     "client": ["com.willr27.blocklings.BlocklingsFabricClient"]

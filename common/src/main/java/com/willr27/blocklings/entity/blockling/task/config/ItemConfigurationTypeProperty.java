@@ -13,6 +13,8 @@ import com.willr27.blocklings.util.event.IEvent;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import com.willr27.blocklings.loader.Dist;
+import com.willr27.blocklings.loader.OnlyIn;
 
 import javax.annotation.Nonnull;
 import java.util.Arrays;
@@ -78,9 +80,19 @@ public class ItemConfigurationTypeProperty extends Property
 
     @Nonnull
     @Override
+    @OnlyIn(Dist.CLIENT)
     public BaseControl createControl()
     {
-        return new SingleSelectorStrip();
+        SingleSelectorStrip<Type> selector = new SingleSelectorStrip<>();
+        selector.setOptions(Arrays.asList(Type.values()));
+        selector.setWidthPercentage(1.0);
+        selector.setSelectedOption(getType());
+        selector.eventBus.subscribe((BaseControl c, SelectionChangedEvent<Type> e) ->
+        {
+            setType(e.newItem, true);
+        });
+
+        return selector;
     }
 
     /**

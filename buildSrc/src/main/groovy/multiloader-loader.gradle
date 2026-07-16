@@ -30,7 +30,12 @@ tasks.named('compileJava', JavaCompile) {
 processResources {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     dependsOn(configurations.commonResources)
-    from(configurations.commonResources)
+    from(configurations.commonResources) {
+        if (project.name == 'fabric') {
+            exclude 'META-INF/neoforge.mods.toml'
+            exclude 'data/**/neoforge/**'
+        }
+    }
 }
 
 tasks.named('sourcesJar', Jar) {

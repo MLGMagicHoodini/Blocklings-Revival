@@ -3,23 +3,34 @@ package com.willr27.blocklings.entity.blockling.goal.goals.misc;
 import com.willr27.blocklings.entity.blockling.BlocklingEntity;
 import com.willr27.blocklings.entity.blockling.goal.BlocklingTargetGoal;
 import com.willr27.blocklings.entity.blockling.task.BlocklingTasks;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.phys.AABB;
+import com.willr27.blocklings.util.EntityUtil;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.pathfinder.Path;
+import net.minecraft.world.phys.AABB;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
 
 /**
- * Finds nearby blocklings of a certain type and leads the owner to them.
+ * Finds nearby untamed blocklings whose natural type matches this blockling's primary type,
+ * then walks toward them so the owner can follow.
  */
 public class BlocklingFindBlocklingsGoal extends BlocklingTargetGoal<BlocklingEntity>
 {
+    /**
+     * Chunks to search in each direction from the blockling (~6 chunks ≈ 96 blocks).
+     */
+    private static final int CHUNK_RANGE = 6;
+
+    /**
+     * Owner must stay this close (blocks) for the goal to run.
+     */
+    private static final double OWNER_RANGE = 16.0;
+
     /**
      * @param id the id associated with the goal's task.
      * @param blockling the blockling.
@@ -37,44 +48,12 @@ public class BlocklingFindBlocklingsGoal extends BlocklingTargetGoal<BlocklingEn
     {
         LivingEntity owner = blockling.getOwner();
 
-        if (owner == null)
-        {
-            return false;
-        }
-        else if (owner.distanceToSqr(blockling) > 16 * 16)
+        if (owner == null || owner.distanceToSqr(blockling) > OWNER_RANGE * OWNER_RANGE)
         {
             return false;
         }
 
-        if (!super.canUse())
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    @Override
-    public boolean canContinueToUse()
-    {
-        if (!super.canContinueToUse())
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    @Override
-    public void start()
-    {
-        super.start();
-    }
-
-    @Override
-    public void stop()
-    {
-        super.stop();
+        return super.canUse();
     }
 
     @Override
@@ -85,16 +64,17 @@ public class BlocklingFindBlocklingsGoal extends BlocklingTargetGoal<BlocklingEn
         int worldHeight = world.getHeight();
         AABB baseBB = new AABB(0, 0, 0, 16, worldHeight, 16);
 
-        final int chunkRange = 6;
-
         BlocklingEntity closestBlockling = null;
         double closestDistanceSq = Double.MAX_VALUE;
 
-        for (int i = chunkX - chunkRange; i < chunkX + chunkRange; i++)
+        for (int i = chunkX - CHUNK_RANGE; i <= chunkX + CHUNK_RANGE; i++)
         {
-            for (int j = chunkZ - chunkRange; j < chunkZ + chunkRange; j++)
+            for (int j = chunkZ - CHUNK_RANGE; j <= chunkZ + CHUNK_RANGE; j++)
             {
-        List<BlocklingEntity> blocklingsInChunk = world.getEntitiesOfClass(BlocklingEntity.class, baseBB.move(i * 16, 0, j * 16), this::isValidTarget);
+                List<BlocklingEntity> blocklingsInChunk = world.getEntitiesOfClass(
+                        BlocklingEntity.class,
+                        baseBB.move(i * 16, 0, j * 16),
+                        this::isValidTarget);
 
                 for (BlocklingEntity chunkBlockling : blocklingsInChunk)
                 {
@@ -117,7 +97,7 @@ public class BlocklingFindBlocklingsGoal extends BlocklingTargetGoal<BlocklingEn
     @Override
     protected void checkForAndHandleInvalidTargets()
     {
-        if (hasTarget() && getTarget().isDeadOrDying())
+        if (hasTarget() && !isValidTarget(getTarget()))
         {
             markTargetBad();
         }
@@ -132,16 +112,26 @@ public class BlocklingFindBlocklingsGoal extends BlocklingTargetGoal<BlocklingEn
     @Override
     public boolean isValidTarget(@Nullable BlocklingEntity target)
     {
-        if (target != null)
+        if (target == null || target == blockling || target.isDeadOrDying())
         {
-            if (target.getNaturalBlocklingType() != blockling.getBlocklingType())
-            {
-                return false;
-            }
-            else if (target.getOwner() != null || target.getOwner() == blockling.getOwner())
-            {
-                return false;
-            }
+            return false;
+        }
+
+        if (badTargets.contains(target))
+        {
+            return false;
+        }
+
+        // Only lead to wild blocklings — already owned pets are ignored.
+        if (target.isTame())
+        {
+            return false;
+        }
+
+        // Match wild natural type to this blockling's current primary type.
+        if (target.getNaturalBlocklingType() != blockling.getBlocklingType())
+        {
+            return false;
         }
 
         return true;
@@ -150,15 +140,54 @@ public class BlocklingFindBlocklingsGoal extends BlocklingTargetGoal<BlocklingEn
     @Override
     protected void tickGoal()
     {
+        BlocklingEntity target = getTarget();
 
+        if (target == null)
+        {
+            return;
+        }
+
+        // Face the wild blockling so the owner can see where it is heading.
+        blockling.getLookControl().setLookAt(target, 30.0f, 30.0f);
     }
 
     @Override
     protected boolean recalcPath(boolean force)
     {
-        setPathTargetPos(getTarget().blockPosition(), null);
+        BlocklingEntity target = getTarget();
 
-        return true;
+        if (target == null)
+        {
+            setPathTargetPos(null, null);
+            return false;
+        }
+
+        BlockPos targetPos = target.blockPosition();
+
+        // Already close enough — stand near them and keep looking.
+        if (blockling.distanceToSqr(target) <= getRangeSq())
+        {
+            setPathTargetPos(targetPos, null);
+            return true;
+        }
+
+        if (!force && isBadPathTargetPos(targetPos))
+        {
+            setPathTargetPos(null, null);
+            return false;
+        }
+
+        Path path = EntityUtil.createPathTo(blockling, targetPos, getRangeSq());
+
+        if (path == null)
+        {
+            // Fallback: vanilla entity pathing (better for moving targets).
+            path = blockling.getNavigation().createPath(target, 0);
+        }
+
+        setPathTargetPos(targetPos, path);
+
+        return path != null;
     }
 
     @Override
@@ -170,18 +199,19 @@ public class BlocklingFindBlocklingsGoal extends BlocklingTargetGoal<BlocklingEn
     @Override
     public int getRecalcInterval()
     {
-        return 100;
+        return 40;
     }
 
     @Override
     public int getPathRecalcInterval()
     {
-        return 40;
+        return 20;
     }
 
     @Override
     public float getRangeSq()
     {
-        return 10;
+        // ~4 blocks — close enough to "show" the wild blockling to the owner.
+        return 16.0f;
     }
 }

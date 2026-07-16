@@ -232,10 +232,20 @@ public class FullGuiUtil extends GuiUtil
     @Override
     public void renderItemStack(@Nonnull GuiGraphics guiGraphics, @Nonnull ItemStack stack, int x, int y, double z, float scale)
     {
+        if (stack.isEmpty())
+        {
+            return;
+        }
+
+        float guiScale = (float) mc.getWindow().getGuiScale();
         PoseStack poseStack = guiGraphics.pose();
         poseStack.pushPose();
+        // ScreenControl scales by 1/guiScale; ItemControl passes gui-space x/y/scale — undo like entities.
+        poseStack.scale(guiScale, guiScale, 1.0F);
+        // Center the 16x16 item on (x, y); without -8/-8 the icon is scissored out of whitelist slots.
         poseStack.translate(x, y, z);
-        poseStack.scale(scale, scale, 1.0f);
+        poseStack.scale(scale / 16.0f, scale / 16.0f, 1.0f);
+        poseStack.translate(-8.0, -8.0, 0.0);
         guiGraphics.renderItem(stack, 0, 0);
         poseStack.popPose();
     }
