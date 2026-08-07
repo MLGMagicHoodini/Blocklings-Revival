@@ -122,6 +122,15 @@ public class NeoForgeBlocklingsConfig
         public final ModConfigSpec.DoubleValue evolveSuccessChance;
 
         @Nonnull
+        public final ModConfigSpec.IntValue evolveRequiredFeeds;
+
+        @Nonnull
+        public final ModConfigSpec.BooleanValue allowFeedEvolution;
+
+        @Nonnull
+        public final ModConfigSpec.DoubleValue tameSuccessChance;
+
+        @Nonnull
         public final ModConfigSpec.DoubleValue primaryTypeChangeChance;
 
         @Nonnull
@@ -203,8 +212,22 @@ public class NeoForgeBlocklingsConfig
             builder.push("Upgrade");
 
             evolveSuccessChance = builder
-                    .comment("Chance (0.0–1.0) that crouching + food evolves the natural blockling type. Original default: 0.25.")
-                    .defineInRange("evolveSuccessChance", 0.25D, 0.0D, 1.0D);
+                    .comment("Chance (0.0–1.0) that crouching + food evolves the natural blockling type per feed. Lower = more feeds needed (less instant). Default: 0.10.")
+                    .defineInRange("evolveSuccessChance", 0.10D, 0.0D, 1.0D);
+
+            evolveRequiredFeeds = builder
+                    .comment("Number of crouching + food feeds required to evolve the natural blockling type. Higher = more resources needed (less cheaty). Default: 16.")
+                    .defineInRange("evolveRequiredFeeds", 16, 1, 10000);
+
+            allowFeedEvolution = builder
+                    .comment("Whether crouching + food can evolve a blockling's type at all.",
+                            "Set to false so a type's effects (e.g. netherite) can only be obtained by finding and taming that type in the world, not by feeding a cheap blockling.",
+                            "Default: true.")
+                    .define("allowFeedEvolution", true);
+
+            tameSuccessChance = builder
+                    .comment("Chance (0.0–1.0) per feed that feeding an untamed blockling its food tames it. Lower = harder (less first-try taming). Default: 0.10.")
+                    .defineInRange("tameSuccessChance", 0.10D, 0.0D, 1.0D);
 
             primaryTypeChangeChance = builder
                     .comment("Chance (0.0–1.0) that food without crouching changes the primary type. Original default: 0.25.")

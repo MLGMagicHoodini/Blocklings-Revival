@@ -36,6 +36,9 @@ public final class NeoForgeConfigBridge
         common.excludedCrops = asSupplier(neo.excludedCrops);
 
         common.evolveSuccessChance = asSupplier(neo.evolveSuccessChance);
+        common.evolveRequiredFeeds = asSupplier(neo.evolveRequiredFeeds);
+        common.allowFeedEvolution = asSupplier(neo.allowFeedEvolution);
+        common.tameSuccessChance = asSupplier(neo.tameSuccessChance);
         common.primaryTypeChangeChance = asSupplier(neo.primaryTypeChangeChance);
 
         bindSpawn(neo, common.spawn);
