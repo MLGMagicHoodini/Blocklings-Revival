@@ -1,16 +1,13 @@
 {
   "entity.blocklings.blockling": "Blockling",
-
   "item.blocklings.blockling": "Blockling",
   "item.blocklings.blockling_spawn_egg": "Oeuf d'apparition de Blockling",
   "item.blocklings.blockling_whistle": "Sifflet pour Blockling",
   "item.blocklings.blockling_whistle.location": "Localisation: ",
-
   "blocklings.gui.more_info": "Restez appuyé sur %s pour plus d'informations",
   "blocklings.gui.current_level": "Niveau : %1$s%2$d",
   "blocklings.gui.xp_required": "Expérience : %1$s%2$d/%3$d",
   "blocklings.gui.configure_task": "Configurer les tâches",
-
   "blocklings.type.natural.name": "Type d'origine :",
   "blocklings.type.natural.desc": "Le type naturel de votre blockling n'a pas de bonus de statistiques, mais fournit tout de même un effet passif. C'est le type sous lequel il est apparu et il ne peut être modifié.",
   "blocklings.type.name": "Type actuel :",
@@ -22,9 +19,6 @@
   "blocklings.type.grass": "Herbe",
   "blocklings.type.grass.passive": "Les blocklings d'herbe ont une chance de transformer la terre sur laquelle ils marchent en herbe.",
   "blocklings.type.oak_log": "Bois de chêne",
-  "blocklings.type.oak_log.passive": "Les blocklings en bois de chêne soignent leurs alliés de 2 points de vie toutes les 10 secondes s'ils sont près d'un bois de chêne.",
-  "blocklings.type.stone": "Pierre",
-  "blocklings.type.stone.passive": "Les blocklings de pierre offrent à leurs alliés un bonus de résistance lorsqu'ils sont à proximité d'eux.",
   "blocklings.type.oak_log.passive": "Oak blocklings heal their allies for 2 health every 10 seconds if they are near an oak tree.",
   "blocklings.type.stone": "Roche",
   "blocklings.type.stone.passive": "Stone blocklings provide their allies bonus resistance when nearby.",
@@ -38,8 +32,6 @@
   "blocklings.type.dark_oak_log.passive": "Dark Oak blocklings heal their allies for 2 health every 10 seconds if they are near a dark oak tree.",
   "blocklings.type.acacia_log": "Acacia Log",
   "blocklings.type.acacia_log.passive": "Acacia blocklings heal their allies for 2 health every 10 seconds if they are near an acacia tree.",
-  "blocklings.type.stone": "Roche",
-  "blocklings.type.stone.passive": "Stone blocklings provide their allies bonus resistance when nearby.",
   "blocklings.type.iron": "Fer",
   "blocklings.type.iron.passive": "Les blocklings de fer offrent à leurs alliés un bonus de force lorsqu'ils sont à proximité d'eux.",
   "blocklings.type.quartz": "Quartz",
@@ -58,7 +50,6 @@
   "blocklings.type.obsidian.passive": "Les blocklings en obsidienne font reculer leurs attaquants lorsqu'ils sont attaqués. Ils sont également immunisés au feu.",
   "blocklings.type.glowstone": "Pierre lumineuse",
   "blocklings.type.glowstone.passive": "Les blocklings en pierre lumineuse émettent de la lumière.",
-
   "blocklings.tab.stats": "Statistiques",
   "blocklings.tab.tasks": "Tâches",
   "blocklings.tab.equipment": "Equipement",
@@ -69,7 +60,6 @@
   "blocklings.tab.mining": "Minage",
   "blocklings.tab.woodcutting": "Bûcheron",
   "blocklings.tab.farming": "Agriculture",
-
   "blocklings.task.ui.configure": "Configurer",
   "blocklings.task.ui.disable": "Désactiver",
   "blocklings.task.ui.enable": "Activer",
@@ -107,23 +97,19 @@
   "blocklings.task.farm_crops.desc": "Votre blockling va récolter les cultures aux alentours s'il a une houe équipée.",
   "blocklings.task.find_blocklings.name": "Find Blocklings",
   "blocklings.task.find_blocklings.desc": "Your blockling will lead you to nearby blocklings with the same natural type as your blockling's primary type.",
-
   "blocklings.whitelist.targets": "Cibles",
   "blocklings.whitelist.ores": "Minerais",
   "blocklings.whitelist.logs": "Bois",
   "blocklings.whitelist.crops": "Cultures",
   "blocklings.whitelist.seeds": "Graines",
-
   "blocklings.skill_group.general.gui_title": "Compétences générales",
   "blocklings.skill_group.combat.gui_title": "Compétences de combat",
   "blocklings.skill_group.mining.gui_title": "Compétences de minage",
   "blocklings.skill_group.woodcutting.gui_title": "Compétences de bûcheron",
   "blocklings.skill_group.farming.gui_title": "Compétences d'agriculture",
-
   "blocklings.skill.buy_confirmation": "Etes-vous sûr de vouloir débloquer %s?",
   "blocklings.skill.unknown": "???",
   "blocklings.skill.name": "Compétence",
-
   "blocklings.skill.general.heal.name": "Soin",
   "blocklings.skill.general.heal.desc": "Effectuez un clic droit sur votre blockling avec une fleur ou un de ses items respectifs pour le soigner de 3 à 5 points de vie.",
   "blocklings.skill.general.packling.name": "Emballage",
@@ -140,7 +126,6 @@
   "blocklings.skill.general.autoswitch.desc": "Votre blockling utilisera le meilleur outil dont il dispose pour sa tâche actuelle.",
   "blocklings.skill.general.find_blocklings.name": "Friend Finder",
   "blocklings.skill.general.find_blocklings.desc": "Unlocks the \"Find Blocklings\" task.",
-
   "blocklings.skill.combat.novice_guard.name": "Garde novice",
   "blocklings.skill.combat.novice_guard.desc": "Débloque les tâches \"Attaquer votre adversaire\" et \"Attaquer votre cible\".",
   "blocklings.skill.combat.whitelist.name": "Liste blanche",
@@ -171,7 +156,6 @@
   "blocklings.skill.combat.poison_attacks.desc": "Votre blockling empoisonne ses cibles.",
   "blocklings.skill.combat.wither_attacks.name": "Attaque de wither",
   "blocklings.skill.combat.wither_attacks.desc": "Votre blockling applique l'effet \"Wither\" à sa cible.",
-
   "blocklings.skill.mining.novice_miner.name": "Mineur novice",
   "blocklings.skill.mining.novice_miner.desc": "Débloque la tâche \"Miner les minerais\".",
   "blocklings.skill.mining.whitelist.name": "Liste blanche des minerais",
@@ -190,7 +174,6 @@
   "blocklings.skill.mining.hot_hands.desc": "Les mains de votre blockling sont si chaudes qu'elles semblent faire fondre les minerais qu'il mine.",
   "blocklings.skill.mining.hammer.name": "Marteau",
   "blocklings.skill.mining.hammer.desc": "Votre blockling minera dorénavant dans une zone de 3x3x3.",
-
   "blocklings.skill.woodcutting.novice_lumberjack.name": "Bûcheron novice",
   "blocklings.skill.woodcutting.novice_lumberjack.desc": "Débloque la tâche \"Couper des arbres\".",
   "blocklings.skill.woodcutting.whitelist.name": "Liste blanche du bûcheron",
@@ -213,7 +196,6 @@
   "blocklings.skill.woodcutting.replanter.desc": "S'il obtient une pousse d'arbre, votre blockling replantera un arbre.",
   "blocklings.skill.woodcutting.lumber_axe.name": "Hache du bûcheron",
   "blocklings.skill.woodcutting.lumber_axe.desc": "Votre blockling coupera dorénavant les bûches dans une zone de 3x3x3.",
-
   "blocklings.skill.farming.novice_farmer.name": "Agriculteur novice",
   "blocklings.skill.farming.novice_farmer.desc": "Débloque la tâche \"Récolter les cultures\".",
   "blocklings.skill.farming.crop_whitelist.name": "Liste blanche des cultures",
@@ -234,42 +216,33 @@
   "blocklings.skill.farming.night_owl.desc": "Plus la luminosité est basse, plus votre blockling va récolter les cultures rapidement.",
   "blocklings.skill.farming.scythe.name": "Faux",
   "blocklings.skill.farming.scythe.desc": "Votre blockling récoltera dorénavant les graines dans une zone de 3x3x3.",
-
   "blocklings.requirements": "Prérequis :",
   "blocklings.conflicts": "Conflits :",
-
   "blocklings.stats.attack.name": "§6Attaque",
   "blocklings.stats.defence.name": "§6Défense",
   "blocklings.stats.gathering.name": "§6Collecte",
   "blocklings.stats.movement.name": "§6Mouvement",
-
   "blocklings.attribute.health.name": "Vie",
   "blocklings.attribute.max_health.name": "Vie maximale",
-
   "blocklings.attribute.off_hand_attack_damage.name": "Points de dégâts (Main gauche)",
   "blocklings.attribute.main_hand_attack_damage.name": "Points de dégâts (Main droite)",
   "blocklings.attribute.attack_speed.name": "Vitesse d'attaque (moyenne)",
   "blocklings.attribute.attack_speed_tools.name": "Outils",
-
   "blocklings.attribute.armour.name": "Armure",
   "blocklings.attribute.armour_toughness.name": "Résistance de l'armure",
   "blocklings.attribute.knockback_resistance.name": "Résistance au recul",
-
   "blocklings.attribute.mining_speed.name": "Vitesse de minage",
   "blocklings.attribute.mining_range.name": "Portée de minage",
   "blocklings.attribute.woodcutting_speed.name": "Vitesse de coupe du bois",
   "blocklings.attribute.woodcutting_range.name": "Portée pour couper le bois",
   "blocklings.attribute.farming_speed.name": "Vitesse de récolte des cultures",
   "blocklings.attribute.farming_range.name": "Portée de récolte des cultures",
-
   "blocklings.attribute.move_speed.name": "Vitesse de déplacement",
-
   "blocklings.attribute.combat_level.name": "Niveau de combat",
   "blocklings.attribute.mining_level.name": "Niveau de mineur",
   "blocklings.attribute.woodcutting_level.name": "Niveau de bûcheron",
   "blocklings.attribute.farming_level.name": "Niveau d'agriculteur",
   "blocklings.attribute.total_level.name": "Niveau total",
-
   "blocklings.attribute.combat_level.required": "Niveau de combat : %d",
   "blocklings.attribute.mining_level.required": "Niveau de mineur : %d",
   "blocklings.attribute.woodcutting_level.required": "Niveau de bûcheron : %d",
@@ -282,8 +255,6 @@
   "blocklings.attribute.mining.range": "Portée : %.1f",
   "blocklings.attribute.woodcutting.range": "Portée : %.1f",
   "blocklings.attribute.farming.range": "Portée : %.1f",
-
   "blocklings.subtitle.blockling_whistle": "Sifflet pour Blockling",
-
   "blocklings.argument.level.invalid": "Niveau invalide \"%s\"!"
 }
