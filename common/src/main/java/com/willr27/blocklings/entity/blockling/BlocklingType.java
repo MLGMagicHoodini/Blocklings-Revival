@@ -40,15 +40,22 @@ public class BlocklingType
      */
     public static final List<BlocklingType> TYPES = new ArrayList<>();
 
+    // Natural Blocklings
     public static final BlocklingType GRASS = create("grass", 2).addCombatStats(2.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 3.0f).addGatheringStats(0.0f, 1.0f, 2.0f);
     public static final BlocklingType DIRT = create("dirt", 0).addCombatStats(2.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 3.0f).addGatheringStats(0.0f, 1.0f, 2.0f);
+
+    // Log Blocklings
     public static final BlocklingType OAK_LOG = create("oak_log", 0).addCombatStats(3.0f, 1.0f, 1.5f, 0.0f, 0.0f, 0.0f, 3.0f).addGatheringStats(0.5f, 2.0f, 1.0f);
     public static final BlocklingType BIRCH_LOG = create("birch_log", 0).addCombatStats(3.0f, 1.0f, 1.5f, 0.0f, 0.0f, 0.0f, 3.0f).addGatheringStats(0.5f, 2.0f, 1.0f);
     public static final BlocklingType SPRUCE_LOG = create("spruce_log", 0).addCombatStats(3.0f, 1.0f, 1.5f, 0.0f, 0.0f, 0.0f, 3.0f).addGatheringStats(0.5f, 2.0f, 1.0f);
     public static final BlocklingType JUNGLE_LOG = create("jungle_log", 0).addCombatStats(3.0f, 1.0f, 1.5f, 0.0f, 0.0f, 0.0f, 3.0f).addGatheringStats(0.5f, 2.0f, 1.0f);
     public static final BlocklingType DARK_OAK_LOG = create("dark_oak_log", 0).addCombatStats(3.0f, 1.0f, 1.5f, 0.0f, 0.0f, 0.0f, 3.0f).addGatheringStats(0.5f, 2.0f, 1.0f);
     public static final BlocklingType ACACIA_LOG = create("acacia_log", 0).addCombatStats(3.0f, 1.0f, 1.5f, 0.0f, 0.0f, 0.0f, 3.0f).addGatheringStats(0.5f, 2.0f, 1.0f);
+
+    // Stone Blocklings
     public static final BlocklingType STONE = create("stone", 0).addCombatStats(5.0f, 1.0f, 1.0f, 2.0f, 1.0f, 0.3f, 2.5f).addGatheringStats(1.5f, 0.5f, 0.5f);
+
+    // Material Blocklings
     public static final BlocklingType IRON = create("iron", 0).addCombatStats(6.0f, 2.0f, 1.0f, 2.0f, 1.0f, 0.1f, 3.0f).addGatheringStats(2.0f, 0.5f, 0.5f);
     public static final BlocklingType QUARTZ = create("quartz", 0).addCombatStats(3.0f, 4.0f, 2.0f, 1.0f, 0.5f, 0.1f, 3.5f).addGatheringStats(2.0f, 0.5f, 0.5f);
     public static final BlocklingType LAPIS = create("lapis", 0).addCombatStats(5.0f, 3.0f, 1.5f, 1.0f, 0.5f, 0.1f, 3.0f).addGatheringStats(2.0f, 0.5f, 0.5f);
