@@ -40,3 +40,5 @@ repo/
 !**/src/**/repo/
 
 *.log.gz
+*.gz
+/fabric/runs/client/logs
