@@ -15,11 +15,15 @@ import net.neoforged.neoforge.items.IItemHandler;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+/**
+ * Resolves inventories through the NeoForge item handler capability, so any mod exposing one works
+ * without Blocklings depending on it. Falls back to the vanilla {@link Container} interface.
+ */
 public final class NeoForgeInventoryHelper implements IInventoryHelper
 {
     @Override
     @Nullable
-    public BlocklingItemHandler getItemHandler(@Nonnull Level level, @Nonnull BlockPos pos, @Nonnull BlockEntity blockEntity, @Nonnull Direction direction)
+    public BlocklingItemHandler getItemHandler(@Nonnull Level level, @Nonnull BlockPos pos, @Nullable BlockEntity blockEntity, @Nonnull Direction direction)
     {
         // Prefer the simple 3-arg query documented by NeoForge, then fall back.
         IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, direction);
@@ -27,11 +31,11 @@ public final class NeoForgeInventoryHelper implements IInventoryHelper
         {
             handler = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, null);
         }
-        if (handler == null)
+        if (handler == null && blockEntity != null)
         {
             handler = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, blockEntity.getBlockState(), blockEntity, direction);
         }
-        if (handler == null)
+        if (handler == null && blockEntity != null)
         {
             handler = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, blockEntity.getBlockState(), blockEntity, null);
         }

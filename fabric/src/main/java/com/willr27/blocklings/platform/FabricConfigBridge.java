@@ -46,8 +46,11 @@ public final class FabricConfigBridge {
     }
 
     private static void ensureDefaults(@Nonnull CommentedConfig config) {
-        setComment(config, "Upgrade", "Food-based type upgrade chances (original Blocklings defaults: 0.25).");
-        putIfAbsent(config, "Upgrade.evolveSuccessChance", 0.25D);
+        setComment(config, "Upgrade", "Food-based type upgrade. evolveRequiredFeeds: crouch+food feeds needed to evolve (higher = more resources). Default 16.");
+        putIfAbsent(config, "Upgrade.evolveSuccessChance", 0.10D);
+        putIfAbsent(config, "Upgrade.evolveRequiredFeeds", 16);
+        putIfAbsent(config, "Upgrade.allowFeedEvolution", true);
+        putIfAbsent(config, "Upgrade.tameSuccessChance", 0.10D);
         putIfAbsent(config, "Upgrade.primaryTypeChangeChance", 0.25D);
 
         setComment(config, "Spawn", "Natural/chunk spawn tuning.");
@@ -119,7 +122,10 @@ public final class FabricConfigBridge {
         common.additionalCrops = listSupplier(config, "Farming.additionalCrops");
         common.excludedCrops = listSupplier(config, "Farming.excludedCrops");
 
-        common.evolveSuccessChance = () -> config.getOrElse("Upgrade.evolveSuccessChance", 0.25D);
+        common.evolveSuccessChance = () -> config.getOrElse("Upgrade.evolveSuccessChance", 0.10D);
+        common.evolveRequiredFeeds = () -> config.getOrElse("Upgrade.evolveRequiredFeeds", 16);
+        common.allowFeedEvolution = () -> config.getOrElse("Upgrade.allowFeedEvolution", true);
+        common.tameSuccessChance = () -> config.getOrElse("Upgrade.tameSuccessChance", 0.10D);
         common.primaryTypeChangeChance = () -> config.getOrElse("Upgrade.primaryTypeChangeChance", 0.25D);
 
         BlocklingSpawnConfig spawn = common.spawn;

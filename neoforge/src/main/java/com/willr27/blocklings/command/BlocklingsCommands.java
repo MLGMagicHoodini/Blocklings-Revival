@@ -18,14 +18,13 @@ import com.willr27.blocklings.network.messages.SetLevelCommandMessage;
 import com.willr27.blocklings.network.messages.SetTypeCommandMessage;
 import com.willr27.blocklings.network.messages.SetXpCommandMessage;
 import com.willr27.blocklings.util.BlocklingsTranslationTextComponent;
-import net.fabricmc.fabric.api.command.v2.ArgumentTypeRegistry;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
-import net.minecraft.commands.synchronization.SingletonArgumentInfo;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
 import javax.annotation.Nonnull;
 import java.util.Arrays;
@@ -34,26 +33,18 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-public final class BlocklingsCommands {
-    private BlocklingsCommands() {
-    }
-
+@EventBusSubscriber(modid = Blocklings.MODID, bus = EventBusSubscriber.Bus.GAME)
+public class BlocklingsCommands
+{
     public static void init() {
-        ArgumentTypeRegistry.registerArgumentType(
-                ResourceLocation.fromNamespaceAndPath(Blocklings.MODID, "blockling_type"),
-                BlocklingTypeArgument.class,
-                SingletonArgumentInfo.contextFree(BlocklingTypeArgument::new));
-
-        ArgumentTypeRegistry.registerArgumentType(
-                ResourceLocation.fromNamespaceAndPath(Blocklings.MODID, "blockling_level"),
-                BlocklingLevelArgument.class,
-                SingletonArgumentInfo.contextFree(BlocklingLevelArgument::new));
-
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> registerCommands(dispatcher));
         Blocklings.LOGGER.debug("Blocklings commands initialized");
     }
 
-    private static void registerCommands(@Nonnull CommandDispatcher<CommandSourceStack> dispatcher) {
+    @SubscribeEvent
+    public static void onRegisterCommands(@Nonnull RegisterCommandsEvent event)
+    {
+        CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
+
         LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("blockling")
                 .requires(source -> source.hasPermission(2))
                 .then(
@@ -78,7 +69,8 @@ public final class BlocklingsCommands {
         dispatcher.register(root);
     }
 
-    private static int executeTypeCommand(@Nonnull CommandContext<CommandSourceStack> context, boolean natural) {
+    private static int executeTypeCommand(@Nonnull CommandContext<CommandSourceStack> context, boolean natural)
+    {
         CommandSourceStack source = context.getSource();
         Player player = source.getPlayer();
         if (player == null) {
@@ -90,7 +82,8 @@ public final class BlocklingsCommands {
         return 1;
     }
 
-    private static int executeLevelCommand(@Nonnull CommandContext<CommandSourceStack> context) {
+    private static int executeLevelCommand(@Nonnull CommandContext<CommandSourceStack> context)
+    {
         CommandSourceStack source = context.getSource();
         Player player = source.getPlayer();
         if (player == null) {
@@ -103,7 +96,8 @@ public final class BlocklingsCommands {
         return 1;
     }
 
-    private static int executeXpCommand(@Nonnull CommandContext<CommandSourceStack> context) {
+    private static int executeXpCommand(@Nonnull CommandContext<CommandSourceStack> context)
+    {
         CommandSourceStack source = context.getSource();
         Player player = source.getPlayer();
         if (player == null) {
@@ -116,9 +110,11 @@ public final class BlocklingsCommands {
         return 1;
     }
 
-    public static class BlocklingTypeArgument implements ArgumentType<BlocklingType> {
+    public static class BlocklingTypeArgument implements ArgumentType<BlocklingType>
+    {
         @Override
-        public BlocklingType parse(StringReader reader) throws CommandSyntaxException {
+        public BlocklingType parse(StringReader reader) throws CommandSyntaxException
+        {
             String key = reader.readString();
             return BlocklingType.TYPES.stream()
                     .filter(type -> type.key.equals(key))
@@ -127,14 +123,16 @@ public final class BlocklingsCommands {
         }
 
         @Override
-        public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> context, SuggestionsBuilder builder) {
+        public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> context, SuggestionsBuilder builder)
+        {
             return SharedSuggestionProvider.suggest(
                     BlocklingType.TYPES.stream().map(type -> type.key),
                     builder);
         }
 
         @Override
-        public Collection<String> getExamples() {
+        public Collection<String> getExamples()
+        {
             return BlocklingType.TYPES.stream().map(type -> type.key).limit(3).collect(Collectors.toList());
         }
 
@@ -142,9 +140,11 @@ public final class BlocklingsCommands {
                 new DynamicCommandExceptionType(obj -> BlocklingsTranslationTextComponent.of("argument.type.invalid", obj));
     }
 
-    public static class BlocklingLevelArgument implements ArgumentType<Level> {
+    public static class BlocklingLevelArgument implements ArgumentType<Level>
+    {
         @Override
-        public Level parse(StringReader reader) throws CommandSyntaxException {
+        public Level parse(StringReader reader) throws CommandSyntaxException
+        {
             String name = reader.readString();
             try {
                 return Level.valueOf(name.toUpperCase());
@@ -154,14 +154,16 @@ public final class BlocklingsCommands {
         }
 
         @Override
-        public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> context, SuggestionsBuilder builder) {
+        public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> context, SuggestionsBuilder builder)
+        {
             return SharedSuggestionProvider.suggest(
                     Arrays.stream(Level.values()).map(Enum::name),
                     builder);
         }
 
         @Override
-        public Collection<String> getExamples() {
+        public Collection<String> getExamples()
+        {
             return List.of("COMBAT", "MINING", "TOTAL");
         }
 
