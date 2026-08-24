@@ -30,3 +30,38 @@ type="optional"
 reason="Optional permission checks for blockling commands."
 ordering="NONE"
 side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="create"
+type="optional"
+reason="Item-handler inventories (vaults, depots, basins) and tagged Create tools work without a hard dependency."
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="aeronautics"
+type="optional"
+reason="Create Aeronautics / Simulated airships. No hard link; load after if present."
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="create_aeronautics"
+type="optional"
+reason="Alternate mod id used by some Create Aeronautics builds."
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="sable"
+type="optional"
+reason="Sable physics engine used by Create Aeronautics. Load after if present."
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="mysticalagriculture"
+type="optional"
+reason="Farm essence crops, mine Inferium/Prosperity/Soulium ore, and use essence tools/scythes."
+ordering="AFTER"
+side="BOTH"

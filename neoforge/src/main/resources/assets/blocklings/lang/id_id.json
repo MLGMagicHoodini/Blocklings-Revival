@@ -324,5 +324,8 @@
   "blocklings.attribute.woodcutting.range": "Rentang: %.1f",
   "blocklings.attribute.farming.range": "Rentang: %.1f",
   "blocklings.subtitle.blockling_whistle": "Memblokir peluit",
-  "blocklings.argument.level.invalid": "Tingkat \"%s\" tidak valid!"
+  "blocklings.argument.level.invalid": "Tingkat \"%s\" tidak valid!",
+  "blocklings.ability.active.harvest_burst": "Harvest Burst",
+  "blocklings.type.pumpkin": "Pumpkin",
+  "blocklings.type.pumpkin.passive": "Grows nearby crops and pumpkin stems. Active: Harvest Burst accelerates every crop in range."
 }

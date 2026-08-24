@@ -324,5 +324,8 @@
   "blocklings.attribute.woodcutting.range": "Alcance: %.1f",
   "blocklings.attribute.farming.range": "Alcance: %.1f",
   "blocklings.subtitle.blockling_whistle": "Apito de bloqueio",
-  "blocklings.argument.level.invalid": "Nível inválido \"%s\"!"
+  "blocklings.argument.level.invalid": "Nível inválido \"%s\"!",
+  "blocklings.ability.active.harvest_burst": "Rajada de colheita",
+  "blocklings.type.pumpkin": "Abóbora",
+  "blocklings.type.pumpkin.passive": "Faz crescer plantações e caules de abóbora próximos. Ativo: Rajada de colheita acelera todas as plantações."
 }

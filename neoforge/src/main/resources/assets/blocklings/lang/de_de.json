@@ -324,5 +324,8 @@
   "blocklings.attribute.woodcutting.range": "Bereich: %.1f",
   "blocklings.attribute.farming.range": "Bereich: %.1f",
   "blocklings.subtitle.blockling_whistle": "Blockierender Pfiff",
-  "blocklings.argument.level.invalid": "Ungültiger Level „%s“!"
+  "blocklings.argument.level.invalid": "Ungültiger Level „%s“!",
+  "blocklings.ability.active.harvest_burst": "Ernteschub",
+  "blocklings.type.pumpkin": "Kürbis",
+  "blocklings.type.pumpkin.passive": "Lässt nahe Pflanzen und Kürbisstängel wachsen. Aktiv: Ernteschub beschleunigt alle Pflanzen in der Nähe."
 }

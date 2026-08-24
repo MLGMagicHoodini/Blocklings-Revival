@@ -21,6 +21,7 @@
     { "predicate": { "blocklings:type": 14 }, "model": "blocklings:item/blockling_diamond" },
     { "predicate": { "blocklings:type": 15 }, "model": "blocklings:item/blockling_netherite" },
     { "predicate": { "blocklings:type": 16 }, "model": "blocklings:item/blockling_obsidian" },
-    { "predicate": { "blocklings:type": 17 }, "model": "blocklings:item/blockling_glowstone" }
+    { "predicate": { "blocklings:type": 17 }, "model": "blocklings:item/blockling_glowstone" },
+    { "predicate": { "blocklings:type": 18 }, "model": "blocklings:item/blockling_pumpkin" }
   ]
 }

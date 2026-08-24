@@ -324,5 +324,8 @@
   "blocklings.attribute.woodcutting.range": "Alue: %.1f",
   "blocklings.attribute.farming.range": "Alue: %.1f",
   "blocklings.subtitle.blockling_whistle": "Estävä pilli",
-  "blocklings.argument.level.invalid": "Virheellinen taso \"%s\"!"
+  "blocklings.argument.level.invalid": "Virheellinen taso \"%s\"!",
+  "blocklings.ability.active.harvest_burst": "Harvest Burst",
+  "blocklings.type.pumpkin": "Pumpkin",
+  "blocklings.type.pumpkin.passive": "Grows nearby crops and pumpkin stems. Active: Harvest Burst accelerates every crop in range."
 }

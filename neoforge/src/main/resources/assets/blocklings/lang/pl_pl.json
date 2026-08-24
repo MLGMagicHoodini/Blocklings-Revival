@@ -324,5 +324,8 @@
   "blocklings.attribute.woodcutting.range": "Zakres: %.1f",
   "blocklings.attribute.farming.range": "Zakres: %.1f",
   "blocklings.subtitle.blockling_whistle": "Blokujący gwizdek",
-  "blocklings.argument.level.invalid": "Nieprawidłowy poziom „%s”!"
+  "blocklings.argument.level.invalid": "Nieprawidłowy poziom „%s”!",
+  "blocklings.ability.active.harvest_burst": "Wybuch zbiorów",
+  "blocklings.type.pumpkin": "Dynia",
+  "blocklings.type.pumpkin.passive": "Przyspiesza wzrost pobliskich upraw i łodyg dyni. Aktywne: Wybuch zbiorów przyspiesza wszystkie uprawy."
 }

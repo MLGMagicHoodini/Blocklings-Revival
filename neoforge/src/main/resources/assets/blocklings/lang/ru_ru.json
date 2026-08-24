@@ -324,5 +324,8 @@
   "blocklings.attribute.woodcutting.range": "Диапазон: %.1f",
   "blocklings.attribute.farming.range": "Диапазон: %.1f",
   "blocklings.subtitle.blockling_whistle": "Блокирующий свисток",
-  "blocklings.argument.level.invalid": "Неверный уровень «%s»!"
+  "blocklings.argument.level.invalid": "Неверный уровень «%s»!",
+  "blocklings.ability.active.harvest_burst": "Всплеск урожая",
+  "blocklings.type.pumpkin": "Тыква",
+  "blocklings.type.pumpkin.passive": "Ускоряет рост ближайших культур и стеблей тыквы. Активно: Всплеск урожая ускоряет все культуры рядом."
 }

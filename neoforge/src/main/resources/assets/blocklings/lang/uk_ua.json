@@ -324,5 +324,8 @@
   "blocklings.attribute.woodcutting.range": "Діапазон: %.1f",
   "blocklings.attribute.farming.range": "Діапазон: %.1f",
   "blocklings.subtitle.blockling_whistle": "Блокуючий свисток",
-  "blocklings.argument.level.invalid": "Недійсний рівень \"%s\"!"
+  "blocklings.argument.level.invalid": "Недійсний рівень \"%s\"!",
+  "blocklings.ability.active.harvest_burst": "Сплеск урожаю",
+  "blocklings.type.pumpkin": "Гарбуз",
+  "blocklings.type.pumpkin.passive": "Прискорює ріст сусідніх культур і стебел гарбуза. Активно: Сплеск урожаю прискорює всі культури поруч."
 }

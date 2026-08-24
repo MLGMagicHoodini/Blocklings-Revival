@@ -324,5 +324,8 @@
   "blocklings.attribute.woodcutting.range": "Bereik: %.1f",
   "blocklings.attribute.farming.range": "Bereik: %.1f",
   "blocklings.subtitle.blockling_whistle": "Blokkerend fluitje",
-  "blocklings.argument.level.invalid": "Ongeldig niveau \"%s\"!"
+  "blocklings.argument.level.invalid": "Ongeldig niveau \"%s\"!",
+  "blocklings.ability.active.harvest_burst": "Oogstuitbarsting",
+  "blocklings.type.pumpkin": "Pompoen",
+  "blocklings.type.pumpkin.passive": "Laat nabije gewassen en pompoenstengels groeien. Actief: Oogstuitbarsting versnelt alle gewassen."
 }

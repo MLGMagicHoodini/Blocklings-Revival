@@ -324,5 +324,8 @@
   "blocklings.attribute.woodcutting.range": "Rekkevidde: %.1f",
   "blocklings.attribute.farming.range": "Rekkevidde: %.1f",
   "blocklings.subtitle.blockling_whistle": "Blokkerende fløyte",
-  "blocklings.argument.level.invalid": "Ugyldig nivå \"%s\"!"
+  "blocklings.argument.level.invalid": "Ugyldig nivå \"%s\"!",
+  "blocklings.ability.active.harvest_burst": "Harvest Burst",
+  "blocklings.type.pumpkin": "Pumpkin",
+  "blocklings.type.pumpkin.passive": "Grows nearby crops and pumpkin stems. Active: Harvest Burst accelerates every crop in range."
 }

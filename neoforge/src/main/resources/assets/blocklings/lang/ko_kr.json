@@ -324,5 +324,8 @@
   "blocklings.attribute.woodcutting.range": "범위: %.1f",
   "blocklings.attribute.farming.range": "범위: %.1f",
   "blocklings.subtitle.blockling_whistle": "막는 휘파람",
-  "blocklings.argument.level.invalid": "잘못된 레벨 \"%s\"!"
+  "blocklings.argument.level.invalid": "잘못된 레벨 \"%s\"!",
+  "blocklings.ability.active.harvest_burst": "수확 폭발",
+  "blocklings.type.pumpkin": "호박",
+  "blocklings.type.pumpkin.passive": "근처 작물과 호박 줄기를 성장시킵니다. 액티브: 수확 폭발이 범위 내 모든 작물을 가속합니다."
 }

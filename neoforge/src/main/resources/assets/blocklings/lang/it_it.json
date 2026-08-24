@@ -324,5 +324,8 @@
   "blocklings.attribute.woodcutting.range": "Intervallo: %.1f",
   "blocklings.attribute.farming.range": "Intervallo: %.1f",
   "blocklings.subtitle.blockling_whistle": "Fischio di blocco",
-  "blocklings.argument.level.invalid": "Livello \"%s\" non valido!"
+  "blocklings.argument.level.invalid": "Livello \"%s\" non valido!",
+  "blocklings.ability.active.harvest_burst": "Getto di raccolto",
+  "blocklings.type.pumpkin": "Zucca",
+  "blocklings.type.pumpkin.passive": "Fa crescere colture e steli di zucca vicini. Attivo: Getto di raccolto accelera tutte le colture."
 }

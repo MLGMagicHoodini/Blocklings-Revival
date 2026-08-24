@@ -324,5 +324,8 @@
   "blocklings.attribute.woodcutting.range": "範圍：%.1f",
   "blocklings.attribute.farming.range": "範圍：%.1f",
   "blocklings.subtitle.blockling_whistle": "阻擋哨子",
-  "blocklings.argument.level.invalid": "等級「%s」無效！"
+  "blocklings.argument.level.invalid": "等級「%s」無效！",
+  "blocklings.ability.active.harvest_burst": "豐收爆發",
+  "blocklings.type.pumpkin": "南瓜",
+  "blocklings.type.pumpkin.passive": "催熟附近的作物與南瓜莖。主動：豐收爆發加速範圍內所有作物。"
 }

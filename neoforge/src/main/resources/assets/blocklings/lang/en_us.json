@@ -7,17 +7,14 @@
   "blocklings.taming.rename": "Use a name tag to rename your blockling.",
   "blocklings.interaction.open_gui": "Right-click (empty hand) to open the menu.",
   "blocklings.interaction.active_ability": "Shift + right-click (empty hand) to use the active ability.",
-
   "item.blocklings.blockling_spawn_egg": "Blockling Spawn Egg",
   "item.blocklings.blockling": "Blockling",
   "item.blocklings.blockling_whistle": "Blockling Whistle",
   "item.blocklings.blockling_whistle.location": "Location: ",
-
   "blocklings.gui.more_info": "Hold %s for more info",
   "blocklings.gui.current_level": "Level: %1$s",
   "blocklings.gui.xp_required": "XP: %1$s/%2$s",
   "blocklings.gui.configure_task": "Configure Task",
-
   "blocklings.ability.cooldown": "Ability on cooldown (%ss remaining)",
   "blocklings.ability.active.nature_pulse": "Nature Pulse",
   "blocklings.ability.active.earth_shift": "Earth Shift",
@@ -32,7 +29,6 @@
   "blocklings.ability.active.solar_burst": "Solar Burst",
   "blocklings.ability.active.crystal_reflection": "Crystal Reflection",
   "blocklings.ability.active.ancient_guardian": "Ancient Guardian",
-
   "blocklings.type.natural.name": "Natural type: ",
   "blocklings.type.natural.desc": "The natural type of your blockling does not effect stat bonuses but still provides a passive effect. This is the type they spawned as and cannot be changed.",
   "blocklings.type.name": "Primary type: ",
@@ -77,7 +73,6 @@
   "blocklings.type.obsidian.passive": "Fire and lava immunity. Knocks back attackers when hit.",
   "blocklings.type.glowstone": "Glowstone",
   "blocklings.type.glowstone.passive": "Emits light and prevents hostile mob spawning nearby.",
-
   "blocklings.tab.stats": "Stats",
   "blocklings.tab.tasks": "Tasks",
   "blocklings.tab.equipment": "Equipment",
@@ -88,7 +83,6 @@
   "blocklings.tab.mining": "Mining",
   "blocklings.tab.woodcutting": "Woodcutting",
   "blocklings.tab.farming": "Farming",
-
   "blocklings.task.ui.configure": "Configure",
   "blocklings.task.ui.disable": "Disable",
   "blocklings.task.ui.enable": "Enable",
@@ -129,13 +123,14 @@
   "blocklings.task.chop_trees.desc": "Your blockling will chop nearby trees if they have an axe equipped.",
   "blocklings.task.farm_crops.name": "Farm Crops",
   "blocklings.task.farm_crops.desc": "Your blockling will farm nearby crops if they have a hoe equipped.",
+  "blocklings.task.farm_essence_crops.name": "Farm Essence Crops",
+  "blocklings.task.farm_essence_crops.desc": "Your blockling farms only Mystical Agriculture crops if they have a hoe equipped.",
   "blocklings.task.find_blocklings.name": "Find Blocklings",
   "blocklings.task.find_blocklings.desc": "Your blockling will lead you to nearby blocklings with the same natural type as your blockling's primary type.",
   "blocklings.task.deposit_items.name": "Deposit Items",
   "blocklings.task.deposit_items.desc": "Your blockling will deposit items from their inventory into nearby containers.",
   "blocklings.task.take_items.name": "Take Items",
   "blocklings.task.take_items.desc": "Your blockling will take items from nearby containers and put them into their inventory.",
-
   "blocklings.config.search.too_many_results": "Too many results...",
   "blocklings.config.items": "Items",
   "blocklings.config.item.add": "Add Item",
@@ -174,32 +169,27 @@
   "blocklings.config.container.side_priority.name": "Side priority",
   "blocklings.config.container.side_priority.side": " (%s)",
   "blocklings.config.container.side_priority.desc": "The order in which your blockling will attempt to insert items into the container (often corresponds to different slots). Lower numbers are higher priority.",
-
   "blocklings.direction.front": "Front",
   "blocklings.direction.back": "Back",
   "blocklings.direction.left": "Left",
   "blocklings.direction.right": "Right",
   "blocklings.direction.top": "Top",
   "blocklings.direction.bottom": "Bottom",
-
   "blocklings.whitelist.targets": "Targets",
   "blocklings.whitelist.ores": "Ores",
   "blocklings.whitelist.logs": "Logs",
   "blocklings.whitelist.crops": "Crops",
   "blocklings.whitelist.seeds": "Seeds",
-
   "blocklings.skill_group.general.gui_title": "General Skills",
   "blocklings.skill_group.combat.gui_title": "Combat Skills",
   "blocklings.skill_group.mining.gui_title": "Mining Skills",
   "blocklings.skill_group.woodcutting.gui_title": "Woodcutting Skills",
   "blocklings.skill_group.farming.gui_title": "Farming Skills",
-
   "blocklings.skill.buy_confirmation": "Are you sure you want to unlock %s?",
   "blocklings.skill.unknown": "???",
   "blocklings.skill.name": "Skill",
   "blocklings.skill.buy.yes": "Yes",
   "blocklings.skill.buy.no": "No",
-
   "blocklings.skill.general.heal.name": "Heal",
   "blocklings.skill.general.heal.desc": "Right-click on your blockling with flowers or their respective type items to heal 3-5 health.",
   "blocklings.skill.general.packling.name": "Packling",
@@ -220,7 +210,6 @@
   "blocklings.skill.general.courier.desc": "Unlocks the \"Deposit Items\" and \"Take Items\" tasks.",
   "blocklings.skill.general.advanced_courier.name": "Advanced Courier",
   "blocklings.skill.general.advanced_courier.desc": "Unlocks the advanced item configuration option for the \"Deposit Items\" and \"Take Items\" tasks.",
-
   "blocklings.skill.combat.novice_guard.name": "Novice Guard",
   "blocklings.skill.combat.novice_guard.desc": "Unlocks the \"Attack Owner''s Attacker\" and \"Attack Owner''s Target\" tasks.",
   "blocklings.skill.combat.whitelist.name": "Target Whitelist",
@@ -251,11 +240,10 @@
   "blocklings.skill.combat.poison_attacks.desc": "Your blockling poisons their targets.",
   "blocklings.skill.combat.wither_attacks.name": "Wither Attacks",
   "blocklings.skill.combat.wither_attacks.desc": "Your blockling withers their targets.",
-
   "blocklings.skill.mining.novice_miner.name": "Novice Miner",
   "blocklings.skill.mining.novice_miner.desc": "Unlocks the \"Mine Ores\" task.",
   "blocklings.skill.mining.whitelist.name": "Ore Whitelist",
-  "blocklings.skill.mining.whitelist.desc": "Unlocks the ore whitelist for the \"Mine Ores\" task.",
+  "blocklings.skill.mining.whitelist.desc": "Unlocks the ore whitelist for the \"Mine Ores\" task. If Mystical Agriculture is loaded, Inferium / Prosperity / Soulium ores and essence blocks are added.",
   "blocklings.skill.mining.efficiency.name": "Efficiency",
   "blocklings.skill.mining.efficiency.desc": "Bonus 10% mining speed.",
   "blocklings.skill.mining.adrenaline.name": "Adrenaline",
@@ -270,7 +258,6 @@
   "blocklings.skill.mining.hot_hands.desc": "Your blockling's hands are so hot they seem to smelt the ores they mine.",
   "blocklings.skill.mining.hammer.name": "Hammer",
   "blocklings.skill.mining.hammer.desc": "Your blockling mines ores in a 3x3x3 area.",
-
   "blocklings.skill.woodcutting.novice_lumberjack.name": "Novice Lumberjack",
   "blocklings.skill.woodcutting.novice_lumberjack.desc": "Unlocks the \"Chop Trees\" task.",
   "blocklings.skill.woodcutting.whitelist.name": "Log Whitelist",
@@ -293,7 +280,6 @@
   "blocklings.skill.woodcutting.replanter.desc": "Your blockling will replant the trees they cut if they have the saplings.",
   "blocklings.skill.woodcutting.lumber_axe.name": "Lumber Axe",
   "blocklings.skill.woodcutting.lumber_axe.desc": "Your blockling chops logs in a 3x3x3 area.",
-
   "blocklings.skill.farming.novice_farmer.name": "Novice Farmer",
   "blocklings.skill.farming.novice_farmer.desc": "Unlocks the \"Farm Crops\" task.",
   "blocklings.skill.farming.crop_whitelist.name": "Crop Whitelist",
@@ -314,42 +300,49 @@
   "blocklings.skill.farming.night_owl.desc": "Your blockling harvests faster the lower the light level.",
   "blocklings.skill.farming.scythe.name": "Scythe",
   "blocklings.skill.farming.scythe.desc": "Your blockling farms crops in a 3x3x3 area.",
-
+  "blocklings.skill.farming.essence_farmer.name": "Essence Farmer",
+  "blocklings.skill.farming.essence_farmer.desc": "Unlocks the \"Farm Essence Crops\" task. Your blockling tends Mystical Agriculture crops only.",
+  "blocklings.skill.farming.mystical_almanac.name": "Mystical Almanac",
+  "blocklings.skill.farming.mystical_almanac.desc": "Unlocks crop and seed whitelists for the \"Farm Essence Crops\" task.",
+  "blocklings.skill.farming.resow_essence.name": "Re-sow Essence",
+  "blocklings.skill.farming.resow_essence.desc": "Replants Mystical Agriculture seeds after harvest on the essence farm task.",
+  "blocklings.skill.farming.inferium_touch.name": "Inferium Touch",
+  "blocklings.skill.farming.inferium_touch.desc": "+6% harvest speed on Mystical Agriculture crops.",
+  "blocklings.skill.farming.blessed_soil.name": "Blessed Soil",
+  "blocklings.skill.farming.blessed_soil.desc": "8% chance to find bonus Inferium Essence when harvesting a Mystical Agriculture crop.",
+  "blocklings.skill.farming.tertium_pulse.name": "Tertium Pulse",
+  "blocklings.skill.farming.tertium_pulse.desc": "Another +4% harvest speed on Mystical Agriculture crops (stacks with Inferium Touch).",
+  "blocklings.skill.farming.supremium_gift.name": "Supremium Gift",
+  "blocklings.skill.farming.supremium_gift.desc": "5% chance to find a Prosperity Shard when harvesting a Mystical Agriculture crop.",
+  "blocklings.skill.farming.essence_scythe.name": "Essence Scythe",
+  "blocklings.skill.farming.essence_scythe.desc": "Harvests Mystical Agriculture crops in a 3x3 area on the essence farm task.",
   "blocklings.requirements": "Requirements:",
   "blocklings.conflicts": "Conflicts:",
-
   "blocklings.stats.attack.name": "§6Attack",
   "blocklings.stats.defence.name": "§6Defence",
   "blocklings.stats.gathering.name": "§6Gathering",
   "blocklings.stats.movement.name": "§6Movement",
-
   "blocklings.attribute.health.name": "Health",
   "blocklings.attribute.max_health.name": "Max Health",
-
   "blocklings.attribute.off_hand_attack_damage.name": "Attack Damage (Left)",
   "blocklings.attribute.main_hand_attack_damage.name": "Attack Damage (Right)",
   "blocklings.attribute.attack_speed.name": "Attack Speed (Average)",
   "blocklings.attribute.attack_speed_tools.name": "Tools",
-
   "blocklings.attribute.armour.name": "Armour",
   "blocklings.attribute.armour_toughness.name": "Armour Toughness",
   "blocklings.attribute.knockback_resistance.name": "Knockback Resistance",
-
   "blocklings.attribute.mining_speed.name": "Mining Speed",
   "blocklings.attribute.mining_range.name": "Mining Range",
   "blocklings.attribute.woodcutting_speed.name": "Woodcutting Speed",
   "blocklings.attribute.woodcutting_range.name": "Woodcutting Range",
   "blocklings.attribute.farming_speed.name": "Farming Speed",
   "blocklings.attribute.farming_range.name": "Farming Range",
-
   "blocklings.attribute.move_speed.name": "Move Speed",
-
   "blocklings.attribute.combat_level.name": "Combat Level",
   "blocklings.attribute.mining_level.name": "Mining Level",
   "blocklings.attribute.woodcutting_level.name": "Woodcutting Level",
   "blocklings.attribute.farming_level.name": "Farming Level",
   "blocklings.attribute.total_level.name": "Total Level",
-
   "blocklings.attribute.combat_level.required": "Combat Level: %d",
   "blocklings.attribute.mining_level.required": "Mining Level: %d",
   "blocklings.attribute.woodcutting_level.required": "Woodcutting Level: %d",
@@ -362,8 +355,9 @@
   "blocklings.attribute.mining.range": "Range: %.1f",
   "blocklings.attribute.woodcutting.range": "Range: %.1f",
   "blocklings.attribute.farming.range": "Range: %.1f",
-
   "blocklings.subtitle.blockling_whistle": "Blockling whistle",
-
-  "blocklings.argument.level.invalid": "Invalid level \"%s\"!"
+  "blocklings.argument.level.invalid": "Invalid level \"%s\"!",
+  "blocklings.ability.active.harvest_burst": "Harvest Burst",
+  "blocklings.type.pumpkin": "Pumpkin",
+  "blocklings.type.pumpkin.passive": "Grows nearby crops and pumpkin stems. Active: Harvest Burst accelerates every crop in range."
 }

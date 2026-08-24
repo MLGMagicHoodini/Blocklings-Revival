@@ -90,6 +90,7 @@ public final class NeoForgeConfigBridge
         bindFamily(neo.glowstone, common.glowstone);
         bindFamily(neo.quartz, common.quartz);
         bindFamily(neo.netherite, common.netherite);
+        bindFamily(neo.pumpkin, common.pumpkin);
     }
 
     private static void bindFamily(@Nonnull NeoForgeBlocklingAbilityConfig.FamilyConfig neo,

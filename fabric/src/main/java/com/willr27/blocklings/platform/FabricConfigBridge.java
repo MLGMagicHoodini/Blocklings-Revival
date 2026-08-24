@@ -170,6 +170,7 @@ public final class FabricConfigBridge {
         bindFamily(config, abilities.glowstone, "glowstone", 0.0D, 8, 60);
         bindFamily(config, abilities.quartz, "quartz", 0.0D, 6, 60);
         bindFamily(config, abilities.netherite, "netherite", 0.0D, 8, 180);
+        bindFamily(config, abilities.pumpkin, "pumpkin", 0.35D, 4, 60);
     }
 
     private static void bindFamily(

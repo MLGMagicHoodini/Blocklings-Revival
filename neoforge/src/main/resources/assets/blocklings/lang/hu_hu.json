@@ -324,5 +324,8 @@
   "blocklings.attribute.woodcutting.range": "Tartomány: %.1f",
   "blocklings.attribute.farming.range": "Tartomány: %.1f",
   "blocklings.subtitle.blockling_whistle": "Blokkoló síp",
-  "blocklings.argument.level.invalid": "Érvénytelen „%s” szint!"
+  "blocklings.argument.level.invalid": "Érvénytelen „%s” szint!",
+  "blocklings.ability.active.harvest_burst": "Harvest Burst",
+  "blocklings.type.pumpkin": "Pumpkin",
+  "blocklings.type.pumpkin.passive": "Grows nearby crops and pumpkin stems. Active: Harvest Burst accelerates every crop in range."
 }
