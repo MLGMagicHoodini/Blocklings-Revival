@@ -8,7 +8,10 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import com.willr27.blocklings.client.renderer.entity.model.BlocklingModel;
 import com.willr27.blocklings.client.renderer.entity.model.BlocklingModelLayers;
+import com.willr27.blocklings.client.renderer.entity.BlocklingCombinedTextureCache;
+import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 
 @EventBusSubscriber(modid = Blocklings.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
@@ -24,5 +27,10 @@ public final class BlocklingsClientSetup {
     @SubscribeEvent
     public static void registerMenuScreens(RegisterMenuScreensEvent event) {
         event.register(BlocklingsMenus.EQUIPMENT.get(), EquipmentScreen::new);
+    }
+
+    @SubscribeEvent
+    public static void registerReloadListeners(RegisterClientReloadListenersEvent event) {
+        event.registerReloadListener((ResourceManagerReloadListener) manager -> BlocklingCombinedTextureCache.clear());
     }
 }

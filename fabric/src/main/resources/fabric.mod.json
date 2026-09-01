@@ -27,6 +27,8 @@
     "aeronautics": "*",
     "create_aeronautics": "*",
     "sable": "*",
-    "mysticalagriculture": "*"
+    "mysticalagriculture": "*",
+    "mysticalagradditions": "*",
+    "fallingtree": "*"
   }
 }

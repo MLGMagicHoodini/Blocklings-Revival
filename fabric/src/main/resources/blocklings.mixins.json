@@ -4,6 +4,9 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "LivingEntityHuntLootMixin",
+    "LivingEntityExperienceMixin",
+    "ThrownExperienceBottleMixin",
+    "DropExperienceBlockAccessor",
     "EntitySpawnAtLocationMixin"
   ],
   "client": [],

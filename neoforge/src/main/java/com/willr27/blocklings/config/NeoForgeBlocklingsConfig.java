@@ -134,6 +134,9 @@ public class NeoForgeBlocklingsConfig
         public final ModConfigSpec.DoubleValue primaryTypeChangeChance;
 
         @Nonnull
+        public final ModConfigSpec.BooleanValue dropGatheredItemsWhenFull;
+
+        @Nonnull
         public final ModConfigSpec.BooleanValue spawnEnabled;
 
         @Nonnull
@@ -232,6 +235,17 @@ public class NeoForgeBlocklingsConfig
             primaryTypeChangeChance = builder
                     .comment("Chance (0.0–1.0) that food without crouching changes the primary type. Original default: 0.25.")
                     .defineInRange("primaryTypeChangeChance", 0.25D, 0.0D, 1.0D);
+
+            builder.pop();
+
+            builder.push("Gathering");
+
+            dropGatheredItemsWhenFull = builder
+                    .comment("Whether mining, woodcutting and farming keep breaking blocks once the blockling's inventory is full.",
+                            "True restores the old behaviour: the surplus is thrown on the ground, where it despawns after five minutes if nobody picks it up.",
+                            "False pauses the task until there is room again (use a deposit-to-container task to keep it working).",
+                            "Default: false.")
+                    .define("dropGatheredItemsWhenFull", false);
 
             builder.pop();
 
@@ -362,8 +376,8 @@ public class NeoForgeBlocklingsConfig
             builder.push("Misc");
 
             disableDirtyBlocklings = builder
-                    .comment("Set this to true to use the pure primary-type texture instead of merged natural+primary textures. Default true because merged textures are generated at runtime and may be missing.")
-                    .define("disableDirtyBlocklings", true);
+                    .comment("When true, evolved blocklings use only the primary-type texture. When false (default), the natural type is blended over the primary type with the legacy mask overlays.")
+                    .define("disableDirtyBlocklings", false);
 
             builder.pop();
         }

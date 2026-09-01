@@ -40,6 +40,7 @@ public final class NeoForgeConfigBridge
         common.allowFeedEvolution = asSupplier(neo.allowFeedEvolution);
         common.tameSuccessChance = asSupplier(neo.tameSuccessChance);
         common.primaryTypeChangeChance = asSupplier(neo.primaryTypeChangeChance);
+        common.dropGatheredItemsWhenFull = asSupplier(neo.dropGatheredItemsWhenFull);
 
         bindSpawn(neo, common.spawn);
         bindAbilities(neo.abilities, common.abilities);

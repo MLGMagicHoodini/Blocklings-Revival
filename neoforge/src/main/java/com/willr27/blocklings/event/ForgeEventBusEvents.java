@@ -7,23 +7,29 @@ import com.willr27.blocklings.entity.blockling.BlocklingMobTargeting;
 import com.willr27.blocklings.entity.blockling.ability.BlocklingAbilityRegistry;
 import com.willr27.blocklings.entity.blockling.ability.BlocklingAbilitySupport;
 import com.willr27.blocklings.entity.blockling.ability.TypeFamily;
+import com.willr27.blocklings.entity.blockling.experience.BlocklingXpHandler;
 import com.willr27.blocklings.entity.blockling.BlocklingType;
 import com.willr27.blocklings.entity.blockling.combat.HuntLootHandler;
 import com.willr27.blocklings.item.BlocklingWhistleItem;
 import com.willr27.blocklings.util.BlockUtil;
 import com.willr27.blocklings.util.EntityUtil;
 import com.willr27.blocklings.util.ToolUtil;
+import com.willr27.blocklings.world.PlayerPlacedLogs;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.minecraft.world.entity.projectile.ThrownExperienceBottle;
 import net.neoforged.neoforge.event.entity.EntityEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 
 import javax.annotation.Nonnull;
@@ -77,31 +83,58 @@ public class ForgeEventBusEvents
             return;
         }
 
-        if (!BlocklingAbilitySupport.hasFamily(blockling, TypeFamily.LAPIS)
-                || !BlocklingsConfig.COMMON.abilities.enabled.get()
-                || !BlocklingsConfig.COMMON.abilities.lapis.passiveEnabled.get())
+        BlocklingXpHandler.absorbKillExperience(blockling, event.getDroppedExperience());
+        event.setDroppedExperience(0);
+    }
+
+    @SubscribeEvent
+    public static void onProjectileImpact(@Nonnull ProjectileImpactEvent event)
+    {
+        if (!(event.getProjectile() instanceof ThrownExperienceBottle bottle))
         {
             return;
         }
 
-        int xp = event.getDroppedExperience() + 1;
-        if (blockling.getAbilityController().hasActiveBuff("wisdom_aura"))
+        if (!BlocklingXpHandler.tryAbsorbThrownBottle(bottle))
         {
-            xp *= 2;
+            return;
         }
 
-        event.setDroppedExperience(xp);
+        event.setCanceled(true);
+        if (!bottle.level().isClientSide())
+        {
+            bottle.discard();
+        }
+    }
+
+    @SubscribeEvent
+    public static void onBlockPlaced(@Nonnull BlockEvent.EntityPlaceEvent event)
+    {
+        if (event.getEntity() instanceof Player player
+                && event.getLevel() instanceof Level level)
+        {
+            PlayerPlacedLogs.markIfPlayerLog(level, event.getPos(), event.getPlacedBlock().getBlock(), player);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onBlockBroken(@Nonnull BlockEvent.BreakEvent event)
+    {
+        if (event.getLevel() instanceof Level level)
+        {
+            PlayerPlacedLogs.unmark(level, event.getPos());
+        }
     }
 
     @SubscribeEvent
     public static void onLivingDropsEvent(@Nonnull LivingDropsEvent event)
     {
-        if (event.getSource().getEntity() instanceof BlocklingEntity blockling
-                && HuntLootHandler.shouldHandleHuntLoot(blockling))
+        BlocklingEntity huntCollector = HuntLootHandler.findHuntCollector(event.getEntity(), event.getSource());
+        if (huntCollector != null)
         {
             // Double the original drop counts first, then vacuum into inventory.
             // Legacy 1.18 doubled the addItem remainder (often empty) so Animal/Monster Hunter did almost nothing.
-            HuntLootHandler.collectHuntDrops(blockling, event.getEntity(), event.getDrops());
+            HuntLootHandler.collectHuntDrops(huntCollector, event.getEntity(), event.getDrops());
             event.setCanceled(true);
         }
 

@@ -62,6 +62,20 @@ side="BOTH"
 [[dependencies.${mod_id}]]
 modId="mysticalagriculture"
 type="optional"
-reason="Farm essence crops, mine Inferium/Prosperity/Soulium ore, and use essence tools/scythes."
+reason="Farm essence crops and plants, mine Inferium/Prosperity/Soulium ore, and use essence tools/scythes."
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="mysticalagradditions"
+type="optional"
+reason="Extra Mystical Agriculture plants (nether star, dragon egg, Insanium) on the essence farm task."
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="fallingtree"
+type="optional"
+reason="Woodcutting blocklings break logs as a player so Falling Tree can fell the whole tree."
 ordering="AFTER"
 side="BOTH"

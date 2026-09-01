@@ -27,12 +27,9 @@ public abstract class LivingEntityHuntLootMixin
     {
         HuntLootCapture.clear();
 
-        if (!(damageSource.getEntity() instanceof BlocklingEntity blockling))
-        {
-            return;
-        }
-
-        if (!HuntLootHandler.shouldHandleHuntLoot(blockling))
+        LivingEntity self = (LivingEntity) (Object) this;
+        BlocklingEntity blockling = HuntLootHandler.findHuntCollector(self, damageSource);
+        if (blockling == null)
         {
             return;
         }

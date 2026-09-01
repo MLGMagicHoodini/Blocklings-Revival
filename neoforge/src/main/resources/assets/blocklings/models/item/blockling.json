@@ -22,6 +22,9 @@
     { "predicate": { "blocklings:type": 15 }, "model": "blocklings:item/blockling_netherite" },
     { "predicate": { "blocklings:type": 16 }, "model": "blocklings:item/blockling_obsidian" },
     { "predicate": { "blocklings:type": 17 }, "model": "blocklings:item/blockling_glowstone" },
-    { "predicate": { "blocklings:type": 18 }, "model": "blocklings:item/blockling_pumpkin" }
+    { "predicate": { "blocklings:type": 18 }, "model": "blocklings:item/blockling_pumpkin" },
+    { "predicate": { "blocklings:type": 19 }, "model": "blocklings:item/blockling_sponge" },
+    { "predicate": { "blocklings:type": 20 }, "model": "blocklings:item/blockling_wetsponge" },
+    { "predicate": { "blocklings:type": 21 }, "model": "blocklings:item/blockling_villager" }
   ]
 }
