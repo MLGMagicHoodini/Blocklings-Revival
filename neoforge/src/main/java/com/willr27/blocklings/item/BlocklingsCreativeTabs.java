@@ -18,13 +18,16 @@ public final class BlocklingsCreativeTabs {
             () -> CreativeModeTab.builder()
                     .title(Component.translatable("itemGroup.blocklings"))
                     .withTabsBefore(CreativeModeTabs.SPAWN_EGGS)
-                    .icon(() -> BlocklingsItems.BLOCKLING_SPAWN_EGG.get().getDefaultInstance())
+                    .icon(() -> BlocklingItem.createPreview(BlocklingType.GRASS))
                     .displayItems((parameters, output) -> {
                         output.accept(BlocklingsItems.BLOCKLING_SPAWN_EGG.get());
                         // One preview per type (typed icon + name). No bare generic item — it looked identical to grass.
                         for (BlocklingType type : BlocklingType.TYPES)
                         {
-                            output.accept(BlocklingItem.createPreview(type));
+                            if (type.isShownInCreativeTab())
+                            {
+                                output.accept(BlocklingItem.createPreview(type));
+                            }
                         }
                         output.accept(BlocklingsItems.BLOCKLING_WHISTLE.get());
                     })

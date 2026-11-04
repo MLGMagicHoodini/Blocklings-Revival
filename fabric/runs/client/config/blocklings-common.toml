@@ -97,20 +97,26 @@
 		radius = 8
 [Woodcutting]
 	customTrees = []
-	defaultMinLeavesToLogRatio = 1.0
+	defaultMinLeavesToLogRatio = 0.0
 [Misc]
-	disableDirtyBlocklings = true
-#Food-based type upgrade chances (original Blocklings defaults: 0.25).
+	disableDirtyBlocklings = false
+#dropGatheredItemsWhenFull: true keeps breaking blocks with a full inventory and spills the surplus on the ground (it despawns after five minutes). False pauses the task instead. Default false.
+[Gathering]
+	dropGatheredItemsWhenFull = false
+#Food-based type upgrade. evolveRequiredFeeds: crouch+food feeds needed to evolve (higher = more resources). Default 16.
 [Upgrade]
-	evolveSuccessChance = 0.25
+	evolveRequiredFeeds = 16
+	evolveSuccessChance = 0.1
+	allowFeedEvolution = true
 	primaryTypeChangeChance = 0.25
+	tameSuccessChance = 0.1
 #Natural/chunk spawn tuning.
 [Spawn]
 	nearbyCap = 6
 	nearbyRadius = 40.0
 	starterSpawnRadius = 12
 	starterSpawnDelayTicks = 40
-	starterSpawnEnabled = true
+	starterSpawnEnabled = false
 	enabled = true
 	preventDuplicateNearbyType = false
 	starterSpawnCount = 5
@@ -121,10 +127,20 @@
 			biomeMode = "AND"
 			spawnWeight = 100
 			enabled = true
+		[Spawn.types.sponge]
+			extraBiomes = []
+			biomeMode = "AND"
+			spawnWeight = 1
+			enabled = true
 		[Spawn.types.obsidian]
 			extraBiomes = []
 			biomeMode = "AND"
 			spawnWeight = 100
+			enabled = true
+		[Spawn.types.villager]
+			extraBiomes = []
+			biomeMode = "AND"
+			spawnWeight = 1
 			enabled = true
 		[Spawn.types.dirt]
 			extraBiomes = []
@@ -166,6 +182,11 @@
 			biomeMode = "AND"
 			spawnWeight = 100
 			enabled = true
+		[Spawn.types.wetsponge]
+			extraBiomes = []
+			biomeMode = "AND"
+			spawnWeight = 1
+			enabled = true
 		[Spawn.types.grass]
 			extraBiomes = []
 			biomeMode = "AND"
@@ -190,6 +211,11 @@
 			extraBiomes = []
 			biomeMode = "AND"
 			spawnWeight = 100
+			enabled = true
+		[Spawn.types.pumpkin]
+			extraBiomes = []
+			biomeMode = "AND"
+			spawnWeight = 25
 			enabled = true
 		[Spawn.types.spruce_log]
 			extraBiomes = []

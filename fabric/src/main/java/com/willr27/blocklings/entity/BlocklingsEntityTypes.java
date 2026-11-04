@@ -12,7 +12,7 @@ public final class BlocklingsEntityTypes {
     public static final EntityType<BlocklingEntity> BLOCKLING = Registry.register(
             BuiltInRegistries.ENTITY_TYPE,
             ResourceLocation.fromNamespaceAndPath(Blocklings.MODID, "blockling"),
-            EntityType.Builder.of(BlocklingEntity::new, MobCategory.CREATURE)
+            EntityType.Builder.of(BlocklingEntity::new, MobCategory.MISC)
                     .sized(1.0f, 1.0f)
                     .build(ResourceLocation.fromNamespaceAndPath(Blocklings.MODID, "blockling").toString()));
 

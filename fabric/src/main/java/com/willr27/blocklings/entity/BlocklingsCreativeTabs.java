@@ -15,12 +15,14 @@ public final class BlocklingsCreativeTabs {
             ResourceLocation.fromNamespaceAndPath(Blocklings.MODID, "main"),
             CreativeModeTab.builder(CreativeModeTab.Row.TOP, 0)
                     .title(Component.translatable("itemGroup.blocklings"))
-                    .icon(() -> BlocklingsItems.BLOCKLING_SPAWN_EGG.getDefaultInstance())
+                    .icon(() -> BlocklingItem.createPreview(BlocklingType.GRASS))
                     .displayItems((parameters, output) -> {
                         output.accept(BlocklingsItems.BLOCKLING_SPAWN_EGG);
                         // One preview per type (typed icon + name). Same as NeoForge.
                         for (BlocklingType type : BlocklingType.TYPES) {
-                            output.accept(BlocklingItem.createPreview(type));
+                            if (type.isShownInCreativeTab()) {
+                                output.accept(BlocklingItem.createPreview(type));
+                            }
                         }
                         output.accept(BlocklingsItems.BLOCKLING_WHISTLE);
                     })

@@ -55,6 +55,7 @@ public class BlocklingsFabric implements ModInitializer {
         ContainerConfigureCapability.register();
         EntityGeneration.init();
         FabricDimensionEvents.register();
+        com.willr27.blocklings.event.FabricWorldEvents.register();
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             com.willr27.blocklings.util.EntityUtil.onWorldAvailable(server.overworld());

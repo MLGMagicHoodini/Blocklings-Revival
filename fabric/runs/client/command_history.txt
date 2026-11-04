@@ -1,2 +1,11 @@
 /locate biome #c:is_plains
 /tp @s -116 100 -295
+/help
+/gamemode
+/list
+/blocklingdevtool list
+/tp 76 64 421
+/give Dev minecraft:grass_block 64
+/gamemode creative
+/blocklingdevtool list
+/blockling devtool list

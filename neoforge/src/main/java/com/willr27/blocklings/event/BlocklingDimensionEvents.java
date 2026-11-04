@@ -3,6 +3,7 @@ package com.willr27.blocklings.event;
 import com.willr27.blocklings.Blocklings;
 import com.willr27.blocklings.entity.blockling.BlocklingDimensionTravel;
 import com.willr27.blocklings.entity.blockling.BlocklingEntity;
+import com.willr27.blocklings.entity.blockling.BlocklingNaturalSpawner;
 import com.willr27.blocklings.entity.blockling.BlocklingStarterSpawn;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -11,6 +12,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 import javax.annotation.Nonnull;
 import java.util.HashSet;
@@ -62,6 +64,15 @@ public class BlocklingDimensionEvents
         }
 
         PENDING_DIMENSION_SYNC.add(blockling.getUUID());
+    }
+
+    @SubscribeEvent
+    public static void onLevelTick(@Nonnull LevelTickEvent.Post event)
+    {
+        if (event.getLevel() instanceof ServerLevel level)
+        {
+            BlocklingNaturalSpawner.tick(level);
+        }
     }
 
     @SubscribeEvent

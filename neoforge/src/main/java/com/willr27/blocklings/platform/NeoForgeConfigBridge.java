@@ -40,6 +40,7 @@ public final class NeoForgeConfigBridge
         common.allowFeedEvolution = asSupplier(neo.allowFeedEvolution);
         common.tameSuccessChance = asSupplier(neo.tameSuccessChance);
         common.primaryTypeChangeChance = asSupplier(neo.primaryTypeChangeChance);
+        common.dropGatheredItemsWhenFull = asSupplier(neo.dropGatheredItemsWhenFull);
 
         bindSpawn(neo, common.spawn);
         bindAbilities(neo.abilities, common.abilities);
@@ -90,6 +91,7 @@ public final class NeoForgeConfigBridge
         bindFamily(neo.glowstone, common.glowstone);
         bindFamily(neo.quartz, common.quartz);
         bindFamily(neo.netherite, common.netherite);
+        bindFamily(neo.pumpkin, common.pumpkin);
     }
 
     private static void bindFamily(@Nonnull NeoForgeBlocklingAbilityConfig.FamilyConfig neo,

@@ -24,6 +24,7 @@ public final class NeoForgeBlocklingAbilityConfig
     public final FamilyConfig glowstone;
     public final FamilyConfig quartz;
     public final FamilyConfig netherite;
+    public final FamilyConfig pumpkin;
 
     public NeoForgeBlocklingAbilityConfig(@Nonnull ModConfigSpec.Builder builder)
     {
@@ -46,6 +47,7 @@ public final class NeoForgeBlocklingAbilityConfig
         glowstone = new FamilyConfig(builder, "glowstone", 0.0D, 8, 60);
         quartz = new FamilyConfig(builder, "quartz", 0.0D, 6, 60);
         netherite = new FamilyConfig(builder, "netherite", 0.0D, 8, 180);
+        pumpkin = new FamilyConfig(builder, "pumpkin", 0.35D, 4, 60);
 
         builder.pop();
     }
@@ -68,6 +70,7 @@ public final class NeoForgeBlocklingAbilityConfig
             case "glowstone" -> glowstone;
             case "quartz" -> quartz;
             case "netherite" -> netherite;
+            case "pumpkin" -> pumpkin;
             default -> grass;
         };
     }

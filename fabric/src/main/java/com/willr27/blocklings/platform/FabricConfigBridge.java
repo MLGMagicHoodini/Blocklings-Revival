@@ -53,9 +53,12 @@ public final class FabricConfigBridge {
         putIfAbsent(config, "Upgrade.tameSuccessChance", 0.10D);
         putIfAbsent(config, "Upgrade.primaryTypeChangeChance", 0.25D);
 
+        setComment(config, "Gathering", "dropGatheredItemsWhenFull: true keeps breaking blocks with a full inventory and spills the surplus on the ground (it despawns after five minutes). False pauses the task instead. Default false.");
+        putIfAbsent(config, "Gathering.dropGatheredItemsWhenFull", false);
+
         setComment(config, "Spawn", "Natural/chunk spawn tuning.");
         putIfAbsent(config, "Spawn.enabled", true);
-        putIfAbsent(config, "Spawn.nearbyCap", 6);
+        putIfAbsent(config, "Spawn.nearbyCap", 12);
         putIfAbsent(config, "Spawn.nearbyRadius", 40.0D);
         putIfAbsent(config, "Spawn.preventDuplicateNearbyType", false);
         putIfAbsent(config, "Spawn.starterSpawnEnabled", false);
@@ -93,7 +96,7 @@ public final class FabricConfigBridge {
         ensureAbilityFamily(config, "quartz", 0.0D, 6, 60);
         ensureAbilityFamily(config, "netherite", 0.0D, 8, 180);
 
-        putIfAbsent(config, "Misc.disableDirtyBlocklings", true);
+        putIfAbsent(config, "Misc.disableDirtyBlocklings", false);
     }
 
     private static void ensureAbilityFamily(
@@ -127,10 +130,11 @@ public final class FabricConfigBridge {
         common.allowFeedEvolution = () -> config.getOrElse("Upgrade.allowFeedEvolution", true);
         common.tameSuccessChance = () -> config.getOrElse("Upgrade.tameSuccessChance", 0.10D);
         common.primaryTypeChangeChance = () -> config.getOrElse("Upgrade.primaryTypeChangeChance", 0.25D);
+        common.dropGatheredItemsWhenFull = () -> config.getOrElse("Gathering.dropGatheredItemsWhenFull", false);
 
         BlocklingSpawnConfig spawn = common.spawn;
         spawn.enabled = () -> config.getOrElse("Spawn.enabled", true);
-        spawn.nearbyCap = () -> config.getOrElse("Spawn.nearbyCap", 6);
+        spawn.nearbyCap = () -> config.getOrElse("Spawn.nearbyCap", 12);
         spawn.nearbyRadius = () -> config.getOrElse("Spawn.nearbyRadius", 40.0D);
         spawn.preventDuplicateNearbyType = () -> config.getOrElse("Spawn.preventDuplicateNearbyType", false);
         spawn.starterSpawnEnabled = () -> config.getOrElse("Spawn.starterSpawnEnabled", false);
@@ -152,7 +156,7 @@ public final class FabricConfigBridge {
     }
 
     private static void bindClient(@Nonnull CommentedConfig config) {
-        BlocklingsConfig.CLIENT.disableDirtyBlocklings = () -> config.getOrElse("Misc.disableDirtyBlocklings", true);
+        BlocklingsConfig.CLIENT.disableDirtyBlocklings = () -> config.getOrElse("Misc.disableDirtyBlocklings", false);
     }
 
     private static void bindAbilities(@Nonnull CommentedConfig config, @Nonnull BlocklingAbilityConfig abilities) {
@@ -170,6 +174,7 @@ public final class FabricConfigBridge {
         bindFamily(config, abilities.glowstone, "glowstone", 0.0D, 8, 60);
         bindFamily(config, abilities.quartz, "quartz", 0.0D, 6, 60);
         bindFamily(config, abilities.netherite, "netherite", 0.0D, 8, 180);
+        bindFamily(config, abilities.pumpkin, "pumpkin", 0.35D, 4, 60);
     }
 
     private static void bindFamily(

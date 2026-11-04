@@ -18,7 +18,7 @@ public final class BlocklingsEntityTypes {
 
     public static final DeferredHolder<EntityType<?>, EntityType<BlocklingEntity>> BLOCKLING =
             ENTITY_TYPES.register("blockling", () -> EntityType.Builder
-                    .of(BlocklingEntity::new, MobCategory.CREATURE)
+                    .of(BlocklingEntity::new, MobCategory.MISC)
                     .sized(1.0f, 1.0f)
                     .build(ResourceLocation.fromNamespaceAndPath(Blocklings.MODID, "blockling").toString()));
 

@@ -134,6 +134,9 @@ public class NeoForgeBlocklingsConfig
         public final ModConfigSpec.DoubleValue primaryTypeChangeChance;
 
         @Nonnull
+        public final ModConfigSpec.BooleanValue dropGatheredItemsWhenFull;
+
+        @Nonnull
         public final ModConfigSpec.BooleanValue spawnEnabled;
 
         @Nonnull
@@ -235,6 +238,17 @@ public class NeoForgeBlocklingsConfig
 
             builder.pop();
 
+            builder.push("Gathering");
+
+            dropGatheredItemsWhenFull = builder
+                    .comment("Whether mining, woodcutting and farming keep breaking blocks once the blockling's inventory is full.",
+                            "True restores the old behaviour: the surplus is thrown on the ground, where it despawns after five minutes if nobody picks it up.",
+                            "False pauses the task until there is room again (use a deposit-to-container task to keep it working).",
+                            "Default: false.")
+                    .define("dropGatheredItemsWhenFull", false);
+
+            builder.pop();
+
             builder.push("Spawn");
 
             spawnEnabled = builder
@@ -242,9 +256,10 @@ public class NeoForgeBlocklingsConfig
                     .define("enabled", true);
 
             nearbyCap = builder
-                    .comment("Max untamed blocklings allowed within nearbyRadius (0 = unlimited).",
-                            "Higher = denser natural spawns (default 10).")
-                    .defineInRange("nearbyCap", 6, 0, 64);
+                    .comment("Max untamed blocklings assigned to each player (0 = unlimited).",
+                            "Each player has a separate budget, so one player cannot use up another's.",
+                            "Blocklings do not consume the vanilla creature cap (default 12).")
+                    .defineInRange("nearbyCap", 12, 0, 64);
 
             nearbyRadius = builder
                     .comment("Horizontal radius used for nearbyCap and duplicate-type checks.")
@@ -362,8 +377,8 @@ public class NeoForgeBlocklingsConfig
             builder.push("Misc");
 
             disableDirtyBlocklings = builder
-                    .comment("Set this to true to use the pure primary-type texture instead of merged natural+primary textures. Default true because merged textures are generated at runtime and may be missing.")
-                    .define("disableDirtyBlocklings", true);
+                    .comment("When true, evolved blocklings use only the primary-type texture. When false (default), the natural type is blended over the primary type with the legacy mask overlays.")
+                    .define("disableDirtyBlocklings", false);
 
             builder.pop();
         }

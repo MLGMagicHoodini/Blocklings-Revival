@@ -29,6 +29,10 @@ loom {
             setConfigName('Fabric Client')
             ideConfigGenerated(true)
             runDir('runs/client')
+            // Dedicated-server testing has no Microsoft session. A fixed offline name
+            // stays in ops.json across launches (Gradle otherwise picks Player###).
+            programArg '--username'
+            programArg 'Dev'
         }
         server {
             server()

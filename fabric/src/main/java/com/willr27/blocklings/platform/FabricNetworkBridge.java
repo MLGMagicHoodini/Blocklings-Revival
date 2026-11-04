@@ -6,12 +6,11 @@ import com.willr27.blocklings.network.MessageRegistry;
 import com.willr27.blocklings.network.NetworkHandler;
 import com.willr27.blocklings.platform.services.INetworkBridge;
 import com.willr27.blocklings.security.BlocklingPacketGuard;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -37,23 +36,26 @@ public final class FabricNetworkBridge implements INetworkBridge {
     }
 
     private static boolean payloadsRegistered;
+    @javax.annotation.Nullable
+    private static ServerboundSender serverboundSender;
+
+    @FunctionalInterface
+    public interface ServerboundSender {
+        void send(CustomPacketPayload payload);
+    }
+
+    public static void setServerboundSender(ServerboundSender sender) {
+        serverboundSender = sender;
+    }
 
     @Override
     public void registerPackets() {
-        registerPayloadTypes();
+        ensurePayloadTypes();
         registerServerReceivers();
         BlocklingsConstants.LOG.info("Blocklings: Fabric network bridge ready");
     }
 
-    public static void registerClientReceivers() {
-        registerPayloadTypes();
-        ClientPlayNetworking.registerGlobalReceiver(
-                BlocklingNetworkPayload.TYPE,
-                (payload, context) -> context.client().execute(
-                        () -> NetworkHandler.handlePayload(payload, context.player())));
-    }
-
-    private static void registerPayloadTypes() {
+    public static void ensurePayloadTypes() {
         if (payloadsRegistered) {
             return;
         }
@@ -81,9 +83,10 @@ public final class FabricNetworkBridge implements INetworkBridge {
 
     @Override
     public void sendToServer(Object message) {
-        if (message instanceof com.willr27.blocklings.network.Message blocklingMessage) {
-            ClientPlayNetworking.send(MessageRegistry.encode(blocklingMessage));
+        if (serverboundSender == null || !(message instanceof com.willr27.blocklings.network.Message blocklingMessage)) {
+            return;
         }
+        serverboundSender.send(MessageRegistry.encode(blocklingMessage));
     }
 
     @Override
